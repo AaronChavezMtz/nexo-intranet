@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Nueva solicitud{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="bi bi-plus-circle"></i> Nueva solicitud</div>
+      <div class="card-body">
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.request_type_id.label(class="form-label") }}
+            {{ form.request_type_id(class="form-select") }}
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=5, placeholder="Describe con detalle tu solicitud...") }}
+            {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          <a href="{{ url_for('requests.list_requests') }}" class="btn btn-outline-secondary">Cancelar</a>
+          {{ form.submit(class="btn btn-primary") }}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

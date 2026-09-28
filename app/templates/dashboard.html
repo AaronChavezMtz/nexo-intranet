@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Inicio - Nexo{% endblock %}
+{% block content %}
+<h3 class="mb-4">Hola, {{ current_user.full_name.split(' ')[0] }} 👋</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-bg-primary h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold">{{ total_documentos }}</div>
+        <div class="small">Documentos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-bg-warning h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold">{{ pendientes }}</div>
+        <div class="small">Solicitudes pendientes</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-bg-info h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold">{{ en_proceso }}</div>
+        <div class="small">En proceso</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-bg-secondary h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold">{{ total_usuarios }}</div>
+        <div class="small">Colaboradores</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-card-checklist"></i> Mis últimas solicitudes</span>
+        <a href="{{ url_for('requests.new_request') }}" class="btn btn-sm btn-primary">+ Nueva</a>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for s in mis_solicitudes %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('requests.view_request', request_id=s.id) }}" class="text-decoration-none">
+            {{ s.folio }} - {{ s.request_type.name }}
+          </a>
+          <span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info','Aprobada':'success','Rechazada':'danger','Cancelada':'secondary'}[s.status] }}">{{ s.status }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">Aún no has creado ninguna solicitud.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  {% if current_user.has_permission('manage_requests') %}
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-person-check"></i> Asignadas a mí</div>
+      <ul class="list-group list-group-flush">
+        {% for s in asignadas_a_mi %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('requests.view_request', request_id=s.id) }}" class="text-decoration-none">
+            {{ s.folio }} - {{ s.requester.full_name }}
+          </a>
+          <span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info'}[s.status] }}">{{ s.status }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No tienes solicitudes asignadas pendientes.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

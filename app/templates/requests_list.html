@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Solicitudes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h3><i class="bi bi-card-checklist"></i> Solicitudes</h3>
+  <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nueva solicitud</a>
+</div>
+
+{% if current_user.has_permission('manage_requests') %}
+<div class="mb-3">
+  <a href="{{ url_for('requests.list_requests') }}" class="btn btn-sm btn-outline-secondary">Todas</a>
+  {% for estado in ['Pendiente', 'En proceso', 'Aprobada', 'Rechazada', 'Cancelada'] %}
+  <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="btn btn-sm btn-outline-secondary">{{ estado }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="table-responsive">
+<table class="table table-hover bg-white align-middle">
+  <thead class="table-light">
+    <tr>
+      <th>Folio</th>
+      <th>Tipo</th>
+      {% if current_user.has_permission('manage_requests') %}<th>Solicitante</th>{% endif %}
+      <th>Estado</th>
+      <th>Asignado a</th>
+      <th>Fecha</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in solicitudes %}
+    <tr style="cursor:pointer" onclick="window.location='{{ url_for('requests.view_request', request_id=s.id) }}'">
+      <td class="fw-semibold">{{ s.folio }}</td>
+      <td>{{ s.request_type.name }}</td>
+      {% if current_user.has_permission('manage_requests') %}<td>{{ s.requester.full_name }}</td>{% endif %}
+      <td><span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info','Aprobada':'success','Rechazada':'danger','Cancelada':'secondary'}[s.status] }}">{{ s.status }}</span></td>
+      <td>{{ s.assigned_to.full_name if s.assigned_to else '—' }}</td>
+      <td>{{ s.created_at.strftime('%d/%m/%Y') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="text-center text-muted py-4">No hay solicitudes registradas.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

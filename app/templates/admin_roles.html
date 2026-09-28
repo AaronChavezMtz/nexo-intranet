@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Roles y permisos{% endblock %}
+{% block content %}
+<h3 class="mb-3"><i class="bi bi-shield-lock"></i> Roles y permisos</h3>
+<div class="row g-3">
+  {% for role in roles %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">{{ role.name }}</div>
+      <div class="card-body">
+        <p class="text-muted small">{{ role.description }}</p>
+        <p class="mb-1 fw-semibold small">Usuarios con este rol: {{ role.users|length }}</p>
+        <hr>
+        <p class="fw-semibold small mb-2">Permisos:</p>
+        {% for p in role.permissions %}
+          <span class="badge bg-primary mb-1">{{ p.code }}</span>
+        {% else %}
+          <span class="text-muted small">Sin permisos asignados</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<p class="text-muted small mt-3">
+  Los roles y permisos base se definen mediante el comando <code>flask seed-db</code>
+  (ver <code>app/seed.py</code>). Puede extenderse con formularios de alta/edición
+  siguiendo el mismo patrón usado para Usuarios.
+</p>
+{% endblock %}
