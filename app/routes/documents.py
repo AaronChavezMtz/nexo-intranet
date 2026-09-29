@@ -75,10 +75,10 @@ def upload_document():
     return render_template("upload_document.html", form=form)
 
 
-@documents_bp.route("/<int:doc_id>/descargar")
+@documents_bp.route("/<string:doc_id>/descargar")
 @login_required
 def download_document(doc_id):
-    doc = Document.query.get_or_404(doc_id)
+    doc = Document.query.filter_by(public_id=doc_id).first_or_404()
 
     puede_ver = (
         doc.is_public
@@ -96,11 +96,11 @@ def download_document(doc_id):
     )
 
 
-@documents_bp.route("/<int:doc_id>/eliminar", methods=["POST"])
+@documents_bp.route("/<string:doc_id>/eliminar", methods=["POST"])
 @login_required
 @permission_required("manage_documents")
 def delete_document(doc_id):
-    doc = Document.query.get_or_404(doc_id)
+    doc = Document.query.filter_by(public_id=doc_id).first_or_404()
     ruta = os.path.join(current_app.config["UPLOAD_FOLDER"], doc.stored_filename)
     if os.path.exists(ruta):
         os.remove(ruta)

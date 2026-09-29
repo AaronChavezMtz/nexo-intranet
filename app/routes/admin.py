@@ -49,15 +49,17 @@ def new_user():
         db.session.commit()
         flash("Usuario creado correctamente.", "success")
         return redirect(url_for("admin.list_users"))
+    elif request.method == "POST":
+        flash("No se pudo guardar: revisa los campos marcados en rojo.", "danger")
 
     return render_template("admin_user_form.html", form=form, modo="crear")
 
 
-@admin_bp.route("/usuarios/<int:user_id>/editar", methods=["GET", "POST"])
+@admin_bp.route("/usuarios/<string:user_id>/editar", methods=["GET", "POST"])
 @login_required
 @permission_required("manage_users")
 def edit_user(user_id):
-    usuario = User.query.get_or_404(user_id)
+    usuario = User.query.filter_by(public_id=user_id).first_or_404()
     form = UserForm(obj=usuario)
     form.role_id.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name).all()]
     form.department_id.choices = [(0, "-- Ninguno --")] + [
@@ -80,19 +82,22 @@ def edit_user(user_id):
         db.session.commit()
         flash("Usuario actualizado correctamente.", "success")
         return redirect(url_for("admin.list_users"))
+    elif request.method == "POST":
+        flash("No se pudo guardar: revisa los campos marcados en rojo.", "danger")
 
     return render_template("admin_user_form.html", form=form, modo="editar", usuario=usuario)
 
 
-@admin_bp.route("/usuarios/<int:user_id>/eliminar", methods=["POST"])
+@admin_bp.route("/usuarios/<string:user_id>/eliminar", methods=["POST"])
 @login_required
 @permission_required("manage_users")
 def delete_user(user_id):
-    if user_id == current_user.id:
+    usuario = User.query.filter_by(public_id=user_id).first_or_404()
+
+    if usuario.id == current_user.id:
         flash("No puedes eliminar tu propio usuario.", "danger")
         return redirect(url_for("admin.list_users"))
 
-    usuario = User.query.get_or_404(user_id)
     db.session.delete(usuario)
     db.session.commit()
     flash("Usuario eliminado.", "info")

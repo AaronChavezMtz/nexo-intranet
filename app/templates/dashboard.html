@@ -48,7 +48,7 @@
       <ul class="list-group list-group-flush">
         {% for s in mis_solicitudes %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('requests.view_request', request_id=s.id) }}" class="text-decoration-none">
+          <a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-decoration-none">
             {{ s.folio }} - {{ s.request_type.name }}
           </a>
           <span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info','Aprobada':'success','Rechazada':'danger','Cancelada':'secondary'}[s.status] }}">{{ s.status }}</span>

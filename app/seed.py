@@ -1,7 +1,9 @@
+import uuid
 import click
+from sqlalchemy import text
 
 from app import db
-from app.models import Role, Permission, Department, RequestType, User
+from app.models import Role, Permission, Department, RequestType, User, Document, ServiceRequest
 
 PERMISSIONS = [
     ("manage_users", "Crear, editar y eliminar usuarios"),
@@ -31,9 +33,33 @@ REQUEST_TYPES = [
 ]
 
 
+def _ensure_public_id_columns():
+    """Migración ligera: agrega la columna public_id si la tabla ya existía
+    de una versión anterior del proyecto. Segura de ejecutar en cada arranque."""
+    for tabla in ("users", "documents", "service_requests"):
+        try:
+            db.session.execute(text(f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS public_id VARCHAR(36)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # la tabla aún no existe o el motor no soporta esta sintaxis
+
+
+def _backfill_public_ids():
+    """Rellena public_id en filas creadas antes de este cambio."""
+    huerfanos = False
+    for modelo in (User, Document, ServiceRequest):
+        for fila in modelo.query.filter(modelo.public_id.is_(None)).all():
+            fila.public_id = uuid.uuid4().hex
+            huerfanos = True
+    if huerfanos:
+        db.session.commit()
+
+
 def _seed_data(log=print):
     """Crea las tablas e inserta datos base. Segura de llamar más de una vez."""
+    _ensure_public_id_columns()
     db.create_all()
+    _backfill_public_ids()
 
     permisos_obj = {}
     for code, desc in PERMISSIONS:
@@ -88,5 +114,4 @@ def _seed_data(log=print):
 def register_seed_command(app):
     @app.cli.command("seed-db")
     def seed_db():
-        """Uso manual (si tienes Shell disponible): flask --app wsgi.py seed-db"""
         _seed_data(log=click.echo)

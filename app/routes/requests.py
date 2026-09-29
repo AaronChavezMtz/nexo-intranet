@@ -62,15 +62,15 @@ def new_request():
         db.session.commit()
 
         flash(f"Solicitud {solicitud.folio} creada correctamente.", "success")
-        return redirect(url_for("requests.view_request", request_id=solicitud.id))
+        return redirect(url_for("requests.view_request", request_id=solicitud.public_id))
 
     return render_template("new_request.html", form=form)
 
 
-@requests_bp.route("/<int:request_id>", methods=["GET", "POST"])
+@requests_bp.route("/<string:request_id>", methods=["GET", "POST"])
 @login_required
 def view_request(request_id):
-    solicitud = ServiceRequest.query.get_or_404(request_id)
+    solicitud = ServiceRequest.query.filter_by(public_id=request_id).first_or_404()
 
     es_dueno = solicitud.requester_id == current_user.id
     puede_gestionar = current_user.has_permission("manage_requests")
@@ -100,6 +100,8 @@ def view_request(request_id):
             db.session.add(comentario)
             db.session.commit()
             flash("Solicitud actualizada.", "success")
-            return redirect(url_for("requests.view_request", request_id=solicitud.id))
+            return redirect(url_for("requests.view_request", request_id=solicitud.public_id))
+        elif request.method == "POST":
+            flash("No se pudo actualizar: revisa los campos marcados en rojo.", "danger")
 
     return render_template("request_detail.html", solicitud=solicitud, update_form=update_form)

@@ -17,7 +17,7 @@ class LoginForm(FlaskForm):
 class UserForm(FlaskForm):
     username = StringField("Usuario", validators=[DataRequired(), Length(max=64)])
     full_name = StringField("Nombre completo", validators=[DataRequired(), Length(max=150)])
-    email = StringField("Correo electrónico", validators=[DataRequired(), Email()])
+    email = StringField("Correo electrónico", validators=[DataRequired(), Email(check_deliverability=False)])
     role_id = SelectField("Perfil (rol)", coerce=int, validators=[DataRequired()])
     department_id = SelectField("Departamento", coerce=int, validators=[Optional()])
     password = PasswordField(

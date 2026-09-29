@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -55,6 +56,7 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, index=True, default=lambda: uuid.uuid4().hex)
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     full_name = db.Column(db.String(150), nullable=False)
@@ -92,6 +94,7 @@ class Document(db.Model):
     __tablename__ = "documents"
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, index=True, default=lambda: uuid.uuid4().hex)
     title = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
     original_filename = db.Column(db.String(255), nullable=False)
@@ -124,6 +127,7 @@ class ServiceRequest(db.Model):
     ESTADOS = ["Pendiente", "En proceso", "Aprobada", "Rechazada", "Cancelada"]
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, index=True, default=lambda: uuid.uuid4().hex)
     folio = db.Column(db.String(20), unique=True, nullable=False)
     request_type_id = db.Column(db.Integer, db.ForeignKey("request_types.id"), nullable=False)
     requester_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
