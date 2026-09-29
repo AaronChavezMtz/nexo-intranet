@@ -9,4 +9,4 @@ Werkzeug==3.0.3
 
 # --- Producción ---
 gunicorn==22.0.0
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.3
