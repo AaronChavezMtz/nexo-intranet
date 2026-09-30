@@ -1,35 +1,182 @@
-/* Estilos personalizados de Nexo */
+/* ==================== Paleta corporativa Nexo ==================== */
+:root {
+  --nx-primary: #163a5f;
+  --nx-primary-dark: #0e2740;
+  --nx-primary-light: #e8eef4;
+  --nx-accent: #2f7cd6;
+  --nx-surface: #ffffff;
+  --nx-bg: #f4f6f9;
+  --nx-border: #e3e7ed;
+  --nx-text: #1f2a37;
+  --nx-muted: #64748b;
+  --nx-radius: 0.6rem;
+}
 
 body {
-    background-color: #f4f6f9;
+  background-color: var(--nx-bg);
+  color: var(--nx-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--nx-text);
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Navbar ---------- */
+.navbar.bg-primary {
+  background-color: var(--nx-primary) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
 .navbar-brand {
-    letter-spacing: 0.5px;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+.navbar .nav-link {
+  font-weight: 500;
+  opacity: 0.92;
+}
+.navbar .nav-link:hover {
+  opacity: 1;
 }
 
+/* ---------- Botones ---------- */
+.btn-primary {
+  --bs-btn-bg: var(--nx-primary);
+  --bs-btn-border-color: var(--nx-primary);
+  --bs-btn-hover-bg: var(--nx-primary-dark);
+  --bs-btn-hover-border-color: var(--nx-primary-dark);
+  --bs-btn-active-bg: var(--nx-primary-dark);
+  --bs-btn-active-border-color: var(--nx-primary-dark);
+  --bs-btn-focus-shadow-rgb: 22, 58, 95;
+  font-weight: 500;
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--nx-primary);
+  --bs-btn-border-color: var(--nx-primary);
+  --bs-btn-hover-bg: var(--nx-primary);
+  --bs-btn-hover-border-color: var(--nx-primary);
+  --bs-btn-active-bg: var(--nx-primary);
+  --bs-btn-active-border-color: var(--nx-primary);
+}
+.btn {
+  border-radius: var(--nx-radius);
+  font-weight: 500;
+}
+
+/* ---------- Texto / badges con color primario ---------- */
+.text-primary { color: var(--nx-primary) !important; }
+.bg-primary { background-color: var(--nx-primary) !important; }
+.text-bg-primary { background-color: var(--nx-primary) !important; }
+.badge.bg-primary { background-color: var(--nx-primary) !important; }
+a { color: var(--nx-accent); }
+a:hover { color: var(--nx-primary-dark); }
+
+/* ---------- Tarjetas ---------- */
 .card {
-    border: none;
-    border-radius: 0.6rem;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
-
 .card-header {
-    background-color: #fff;
-    border-bottom: 1px solid #eee;
-    font-weight: 600;
+  background-color: var(--nx-surface);
+  border-bottom: 1px solid var(--nx-border);
+  font-weight: 600;
+  color: var(--nx-text);
 }
 
+/* ---------- Tablas ---------- */
+.table thead.table-light th {
+  background-color: var(--nx-primary-light);
+  color: var(--nx-primary-dark);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  border-bottom: none;
+}
 table tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.04);
+  background-color: var(--nx-primary-light);
 }
 
+/* ---------- Formularios ---------- */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--nx-accent);
+  box-shadow: 0 0 0 0.2rem rgba(47, 124, 214, 0.15);
+}
+.form-label {
+  font-weight: 500;
+  color: var(--nx-text);
+  font-size: 0.9rem;
+}
+
+/* ---------- Tarjetas KPI del dashboard ---------- */
+.kpi-card {
+  background-color: var(--nx-surface);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  height: 100%;
+}
+.kpi-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--nx-text);
+}
+.kpi-label {
+  font-size: 0.82rem;
+  color: var(--nx-muted);
+}
+
+/* ---------- Footer ---------- */
 footer {
-    border-top: 1px solid #e2e2e2;
+  border-top: 1px solid var(--nx-border);
+  color: var(--nx-muted);
 }
 
+/* ---------- Login (split screen) ---------- */
+.login-brand-panel {
+  background: linear-gradient(160deg, var(--nx-primary) 0%, var(--nx-primary-dark) 100%);
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem;
+}
+.login-brand-panel h1 {
+  color: #fff;
+  font-weight: 700;
+}
+.login-form-panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--nx-surface);
+}
+
+/* ---------- Responsivo ---------- */
 @media (max-width: 576px) {
-    .card-body {
-        padding: 1rem;
-    }
+  .card-body { padding: 1rem; }
+}
+@media (max-width: 767.98px) {
+  .login-brand-panel { min-height: 220px; padding: 2rem; }
+  .login-form-panel { min-height: auto; padding: 2rem 1rem; }
 }

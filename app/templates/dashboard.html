@@ -1,38 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Inicio - Nexo{% endblock %}
 {% block content %}
-<h3 class="mb-4">Hola, {{ current_user.full_name.split(' ')[0] }} </h3>
+<h3 class="mb-4">Hola, {{ current_user.full_name.split(' ')[0] }} 👋</h3>
 
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
-    <div class="card text-bg-primary h-100">
-      <div class="card-body">
-        <div class="fs-3 fw-bold">{{ total_documentos }}</div>
-        <div class="small">Documentos</div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background-color: #e8eef4; color: #163a5f;"><i class="bi bi-folder2-open"></i></div>
+      <div>
+        <div class="kpi-value">{{ total_documentos }}</div>
+        <div class="kpi-label">Documentos</div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card text-bg-warning h-100">
-      <div class="card-body">
-        <div class="fs-3 fw-bold">{{ pendientes }}</div>
-        <div class="small">Solicitudes pendientes</div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background-color: #fef3e2; color: #b45309;"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <div class="kpi-value">{{ pendientes }}</div>
+        <div class="kpi-label">Pendientes</div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card text-bg-info h-100">
-      <div class="card-body">
-        <div class="fs-3 fw-bold">{{ en_proceso }}</div>
-        <div class="small">En proceso</div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background-color: #e0f2fe; color: #0369a1;"><i class="bi bi-arrow-repeat"></i></div>
+      <div>
+        <div class="kpi-value">{{ en_proceso }}</div>
+        <div class="kpi-label">En proceso</div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card text-bg-secondary h-100">
-      <div class="card-body">
-        <div class="fs-3 fw-bold">{{ total_usuarios }}</div>
-        <div class="small">Colaboradores</div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background-color: #f1f5f9; color: #475569;"><i class="bi bi-people"></i></div>
+      <div>
+        <div class="kpi-value">{{ total_usuarios }}</div>
+        <div class="kpi-label">Colaboradores</div>
       </div>
     </div>
   </div>
@@ -67,7 +71,7 @@
       <ul class="list-group list-group-flush">
         {% for s in asignadas_a_mi %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('requests.view_request', request_id=s.id) }}" class="text-decoration-none">
+          <a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-decoration-none">
             {{ s.folio }} - {{ s.requester.full_name }}
           </a>
           <span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info'}[s.status] }}">{{ s.status }}</span>

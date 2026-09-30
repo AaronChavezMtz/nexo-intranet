@@ -53,16 +53,24 @@ class UserForm(FlaskForm):
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField(
-        "Contraseña actual", validators=[DataRequired()],
+        "Contraseña actual",
+        validators=[DataRequired(message="Ingresa tu contraseña actual.")],
         render_kw={"autocomplete": "current-password"},
     )
     new_password = PasswordField(
-        "Nueva contraseña", validators=[DataRequired(), Length(min=6)],
+        "Nueva contraseña",
+        validators=[
+            DataRequired(message="Ingresa una nueva contraseña."),
+            Length(min=6, message="Mínimo 6 caracteres."),
+        ],
         render_kw={"autocomplete": "new-password"},
     )
     confirm_password = PasswordField(
         "Confirmar nueva contraseña",
-        validators=[DataRequired(), EqualTo("new_password", message="Las contraseñas no coinciden")],
+        validators=[
+            DataRequired(message="Confirma tu nueva contraseña."),
+            EqualTo("new_password", message="Las contraseñas no coinciden."),
+        ],
         render_kw={"autocomplete": "new-password"},
     )
     submit = SubmitField("Actualizar contraseña")
