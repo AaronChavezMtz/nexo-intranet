@@ -9,7 +9,15 @@
 <div class="row g-4">
   <div class="col-md-7">
     <div class="card mb-4">
-      <div class="card-header">Detalle</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Detalle</span>
+        {% if current_user.has_permission('delete_requests') %}
+        <form action="{{ url_for('requests.delete_request', request_id=solicitud.public_id) }}" method="POST"
+              onsubmit="return confirmAction(this, 'Esto eliminará la solicitud {{ solicitud.folio }} y toda su bitácora de forma permanente. ¿Continuar?');">
+          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar solicitud</button>
+        </form>
+        {% endif %}
+      </div>
       <div class="card-body">
         <p><b>Tipo:</b> {{ solicitud.request_type.name }}</p>
         <p><b>Solicitante:</b> {{ solicitud.requester.full_name }}</p>
@@ -67,8 +75,8 @@
             {{ update_form.assigned_to_id(class="form-select") }}
           </div>
           <div class="mb-3">
-            {{ update_form.comment.label(class="form-label") }} <span class="text-danger">*</span>
-            {{ update_form.comment(class="form-control" ~ (" is-invalid" if update_form.comment.errors else ""), rows=3, placeholder="Explica el motivo del cambio...") }}
+            {{ update_form.comment.label(class="form-label") }}
+            {{ update_form.comment(class="form-control" ~ (" is-invalid" if update_form.comment.errors else ""), rows=3, placeholder="Opcional: explica el motivo del cambio...") }}
           </div>
           {{ update_form.submit(class="btn btn-primary w-100") }}
         </form>

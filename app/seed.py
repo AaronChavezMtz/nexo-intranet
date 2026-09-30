@@ -11,6 +11,7 @@ PERMISSIONS = [
     ("manage_documents", "Administrar todos los documentos (ver, eliminar)"),
     ("upload_documents", "Subir documentos a la intranet"),
     ("manage_requests", "Gestionar y dar seguimiento a solicitudes de otros"),
+    ("delete_requests", "Eliminar solicitudes de forma permanente"),
 ]
 
 ROLES = {

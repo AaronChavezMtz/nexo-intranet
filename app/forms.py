@@ -118,7 +118,10 @@ class RequestUpdateForm(FlaskForm):
         validators=[DataRequired()],
     )
     assigned_to_id = SelectField("Asignar a", coerce=int, validators=[Optional()])
-    comment = TextAreaField("Comentario", validators=[DataRequired(), Length(max=1000)])
+    comment = TextAreaField(
+        "Comentario (opcional)",
+        validators=[Optional(), Length(max=1000, message="Máximo 1000 caracteres.")],
+    )
     submit = SubmitField("Actualizar solicitud")
 
 

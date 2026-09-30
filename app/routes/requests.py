@@ -83,19 +83,39 @@ def view_request(request_id):
         update_form.assigned_to_id.choices = [(0, "-- Sin asignar --")] + [
             (u.id, u.full_name) for u in User.query.order_by(User.full_name).all()
         ]
-        update_form.status.data = solicitud.status
-        update_form.assigned_to_id.data = solicitud.assigned_to_id or 0
+
+        # OJO: los valores por defecto solo se cargan en GET.
+        # Si se hicieran también en POST, se pisaría lo que el usuario
+        # acaba de seleccionar antes de poder guardarlo (ese era el bug).
+        if request.method == "GET":
+            update_form.status.data = solicitud.status
+            update_form.assigned_to_id.data = solicitud.assigned_to_id or 0
 
         if update_form.validate_on_submit():
             estado_anterior = solicitud.status
+            asignado_anterior_id = solicitud.assigned_to_id
+
             solicitud.status = update_form.status.data
             solicitud.assigned_to_id = update_form.assigned_to_id.data or None
+
+            cambio_estado = solicitud.status != estado_anterior
+            cambio_asignacion = solicitud.assigned_to_id != asignado_anterior_id
+
+            comentario_texto = (update_form.comment.data or "").strip()
+            if not comentario_texto:
+                partes = []
+                if cambio_estado:
+                    partes.append(f"Estado cambiado a '{solicitud.status}'")
+                if cambio_asignacion:
+                    nombre = solicitud.assigned_to.full_name if solicitud.assigned_to else "sin asignar"
+                    partes.append(f"Reasignada a {nombre}")
+                comentario_texto = "; ".join(partes) if partes else "Solicitud revisada sin cambios."
 
             comentario = RequestComment(
                 service_request_id=solicitud.id,
                 user_id=current_user.id,
-                comment=update_form.comment.data,
-                new_status=update_form.status.data if update_form.status.data != estado_anterior else None,
+                comment=comentario_texto,
+                new_status=solicitud.status if cambio_estado else None,
             )
             db.session.add(comentario)
             db.session.commit()
@@ -105,3 +125,15 @@ def view_request(request_id):
             flash("No se pudo actualizar: revisa los campos marcados en rojo.", "danger")
 
     return render_template("request_detail.html", solicitud=solicitud, update_form=update_form)
+
+
+@requests_bp.route("/<string:request_id>/eliminar", methods=["POST"])
+@login_required
+@permission_required("delete_requests")
+def delete_request(request_id):
+    solicitud = ServiceRequest.query.filter_by(public_id=request_id).first_or_404()
+    folio = solicitud.folio
+    db.session.delete(solicitud)  # la bitácora se borra sola (cascade en el modelo)
+    db.session.commit()
+    flash(f"Solicitud {folio} eliminada permanentemente.", "info")
+    return redirect(url_for("requests.list_requests"))
