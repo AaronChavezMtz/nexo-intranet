@@ -180,3 +180,20 @@ footer {
   .login-brand-panel { min-height: 220px; padding: 2rem; }
   .login-form-panel { min-height: auto; padding: 2rem 1rem; }
 }
+/* ---------- Panel de credenciales de demostración ---------- */
+.demo-credentials {
+  background-color: var(--nx-primary-light);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  padding: 1rem 1.1rem;
+}
+.demo-credentials table td {
+  padding: 0.2rem 0.4rem;
+  vertical-align: middle;
+}
+.demo-credentials code {
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  color: var(--nx-primary-dark);
+}
