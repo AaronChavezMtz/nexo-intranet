@@ -6,16 +6,29 @@
     <div class="card shadow-sm">
       <div class="card-header"><i class="bi bi-plus-circle"></i> Nueva solicitud</div>
       <div class="card-body">
+
+        {% if form.errors %}
+        <div class="alert alert-danger">
+          <b>No se pudo enviar.</b> Revisa lo siguiente:
+          <ul class="mb-0">
+            {% for field_name, errores in form.errors.items() %}
+              {% for error in errores %}
+              <li>{{ form[field_name].label.text }}: {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
         <form method="POST" novalidate>
           {{ form.hidden_tag() }}
           <div class="mb-3">
-            {{ form.request_type_id.label(class="form-label") }}
-            {{ form.request_type_id(class="form-select") }}
+            {{ form.request_type_id.label(class="form-label") }} <span class="text-danger">*</span>
+            {{ form.request_type_id(class="form-select" ~ (" is-invalid" if form.request_type_id.errors else "")) }}
           </div>
           <div class="mb-3">
-            {{ form.description.label(class="form-label") }}
-            {{ form.description(class="form-control", rows=5, placeholder="Describe con detalle tu solicitud...") }}
-            {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            {{ form.description.label(class="form-label") }} <span class="text-danger">*</span>
+            {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else ""), rows=5, placeholder="Describe con detalle tu solicitud (mínimo 10 caracteres)...") }}
           </div>
           <a href="{{ url_for('requests.list_requests') }}" class="btn btn-outline-secondary">Cancelar</a>
           {{ form.submit(class="btn btn-primary") }}

@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+import os
+
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
 from app import db
-from app.models import User, Role, Department, RequestType
+from app.models import User, Role, Department, RequestType, Document, ServiceRequest, RequestComment
 from app.forms import UserForm, RoleForm, DepartmentForm
 from app.decorators import permission_required
 
@@ -119,16 +121,32 @@ def delete_user(user_id):
         return redirect(url_for("admin.list_users"))
 
     try:
+        # 1. Elimina los documentos que subió (y su archivo físico en el servidor)
+        for doc in Document.query.filter_by(uploaded_by_id=usuario.id).all():
+            ruta = os.path.join(current_app.config["UPLOAD_FOLDER"], doc.stored_filename)
+            if os.path.exists(ruta):
+                os.remove(ruta)
+            db.session.delete(doc)
+
+        # 2. Elimina comentarios que dejó en solicitudes de otras personas
+        RequestComment.query.filter_by(user_id=usuario.id).delete(synchronize_session=False)
+
+        # 3. Si era supervisor de solicitudes ajenas, las deja sin asignar (no las borra)
+        ServiceRequest.query.filter_by(assigned_to_id=usuario.id).update(
+            {"assigned_to_id": None}, synchronize_session=False
+        )
+
+        # 4. Elimina las solicitudes que él mismo creó (arrastra su propia bitácora)
+        for sol in ServiceRequest.query.filter_by(requester_id=usuario.id).all():
+            db.session.delete(sol)
+
         db.session.delete(usuario)
         db.session.commit()
-        flash("Usuario eliminado.", "info")
+        flash(f"Usuario '{usuario.full_name}' y todos sus datos asociados fueron eliminados.", "info")
     except IntegrityError:
         db.session.rollback()
-        flash(
-            "No se puede eliminar: este usuario tiene documentos o solicitudes "
-            "asociadas. En su lugar, desactívalo desde 'Editar'.",
-            "danger",
-        )
+        flash("No se pudo eliminar el usuario: hay datos relacionados que lo impiden.", "danger")
+
     return redirect(url_for("admin.list_users"))
 
 

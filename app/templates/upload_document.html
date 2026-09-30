@@ -6,23 +6,34 @@
     <div class="card shadow-sm">
       <div class="card-header"><i class="bi bi-upload"></i> Subir nuevo documento</div>
       <div class="card-body">
+
+        {% if form.errors %}
+        <div class="alert alert-danger">
+          <b>No se pudo guardar.</b> Revisa lo siguiente:
+          <ul class="mb-0">
+            {% for field_name, errores in form.errors.items() %}
+              {% for error in errores %}
+              <li>{{ form[field_name].label.text }}: {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
         <form method="POST" enctype="multipart/form-data" novalidate>
           {{ form.hidden_tag() }}
           <div class="mb-3">
-            {{ form.title.label(class="form-label") }}
+            {{ form.title.label(class="form-label") }} <span class="text-danger">*</span>
             {{ form.title(class="form-control" ~ (" is-invalid" if form.title.errors else "")) }}
-            {% for error in form.title.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
           <div class="mb-3">
-            {{ form.description.label(class="form-label") }}
+            {{ form.description.label(class="form-label") }} <span class="text-danger">*</span>
             {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else ""), rows=3) }}
-            {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
           <div class="row">
             <div class="col-md-6 mb-3">
-              {{ form.category.label(class="form-label") }}
+              {{ form.category.label(class="form-label") }} <span class="text-danger">*</span>
               {{ form.category(class="form-control" ~ (" is-invalid" if form.category.errors else ""), placeholder="Ej. Manuales, Políticas...") }}
-              {% for error in form.category.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6 mb-3">
               {{ form.department_id.label(class="form-label") }}
@@ -30,9 +41,8 @@
             </div>
           </div>
           <div class="mb-3">
-            {{ form.file.label(class="form-label") }}
+            {{ form.file.label(class="form-label") }} <span class="text-danger">*</span>
             {{ form.file(class="form-control" ~ (" is-invalid" if form.file.errors else "")) }}
-            {% for error in form.file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
           <div class="form-check mb-3">
             {{ form.is_public(class="form-check-input") }}

@@ -29,7 +29,7 @@
   </thead>
   <tbody>
     {% for s in solicitudes %}
-    <tr style="cursor:pointer" onclick="window.location='{{ url_for('requests.view_request', request_id=s.public:_id) }}'">
+    <tr style="cursor:pointer" onclick="window.location='{{ url_for('requests.view_request', request_id=s.public_id) }}'">
       <td class="fw-semibold">{{ s.folio }}</td>
       <td>{{ s.request_type.name }}</td>
       {% if current_user.has_permission('manage_requests') %}<td>{{ s.requester.full_name }}</td>{% endif %}

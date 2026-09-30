@@ -75,11 +75,17 @@ class DocumentForm(FlaskForm):
     )
     description = TextAreaField(
         "Descripción",
-        validators=[Optional(), Length(max=1000, message="Máximo 1000 caracteres.")],
+        validators=[
+            DataRequired(message="La descripción es obligatoria."),
+            Length(min=10, max=1000, message="Debe tener entre 10 y 1000 caracteres."),
+        ],
     )
     category = StringField(
         "Categoría",
-        validators=[Optional(), Length(max=80, message="Máximo 80 caracteres.")],
+        validators=[
+            DataRequired(message="La categoría es obligatoria."),
+            Length(min=2, max=80, message="Debe tener entre 2 y 80 caracteres."),
+        ],
     )
     department_id = SelectField("Departamento", coerce=int, validators=[Optional()])
     is_public = BooleanField("Visible para todos los colaboradores", default=True)

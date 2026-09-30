@@ -42,6 +42,20 @@
     <div class="card shadow-sm">
       <div class="card-header"><i class="bi bi-arrow-repeat"></i> Actualizar solicitud</div>
       <div class="card-body">
+
+        {% if update_form.errors %}
+        <div class="alert alert-danger">
+          <b>No se pudo actualizar.</b> Revisa lo siguiente:
+          <ul class="mb-0">
+            {% for field_name, errores in update_form.errors.items() %}
+              {% for error in errores %}
+              <li>{{ update_form[field_name].label.text }}: {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
         <form method="POST" novalidate>
           {{ update_form.hidden_tag() }}
           <div class="mb-3">
@@ -53,8 +67,8 @@
             {{ update_form.assigned_to_id(class="form-select") }}
           </div>
           <div class="mb-3">
-            {{ update_form.comment.label(class="form-label") }}
-            {{ update_form.comment(class="form-control", rows=3) }}
+            {{ update_form.comment.label(class="form-label") }} <span class="text-danger">*</span>
+            {{ update_form.comment(class="form-control" ~ (" is-invalid" if update_form.comment.errors else ""), rows=3, placeholder="Explica el motivo del cambio...") }}
           </div>
           {{ update_form.submit(class="btn btn-primary w-100") }}
         </form>
