@@ -46,6 +46,7 @@ class Department(db.Model):
     __tablename__ = "departments"
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, index=True, default=lambda: uuid.uuid4().hex)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.String(255))
 

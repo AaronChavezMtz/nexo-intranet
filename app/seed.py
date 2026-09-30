@@ -1,6 +1,6 @@
 import uuid
 import click
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from app import db
 from app.models import Role, Permission, Department, RequestType, User, Document, ServiceRequest
@@ -32,27 +32,35 @@ REQUEST_TYPES = [
     ("Constancia laboral", "Recursos Humanos"),
 ]
 
+_TABLAS_CON_PUBLIC_ID = ["departments", "users", "documents", "service_requests"]
+_MODELOS_CON_PUBLIC_ID = [Department, User, Document, ServiceRequest]
+
 
 def _ensure_public_id_columns():
-    """Migración ligera: agrega la columna public_id si la tabla ya existía
-    de una versión anterior del proyecto. Segura de ejecutar en cada arranque."""
-    for tabla in ("users", "documents", "service_requests"):
-        try:
-            db.session.execute(text(f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS public_id VARCHAR(36)"))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()  # la tabla aún no existe o el motor no soporta esta sintaxis
+    """Agrega la columna public_id a tablas creadas antes de este cambio.
+    Usa el inspector de SQLAlchemy en vez de 'IF NOT EXISTS' para que funcione
+    igual en SQLite (desarrollo) y PostgreSQL (producción)."""
+    inspector = inspect(db.engine)
+    for tabla in _TABLAS_CON_PUBLIC_ID:
+        if not inspector.has_table(tabla):
+            continue  # la tabla se creará desde cero más abajo, ya con la columna
+        columnas = [c["name"] for c in inspector.get_columns(tabla)]
+        if "public_id" not in columnas:
+            try:
+                db.session.execute(text(f"ALTER TABLE {tabla} ADD COLUMN public_id VARCHAR(36)"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
 
 def _backfill_public_ids():
-    """Rellena public_id en filas creadas antes de este cambio."""
-    huerfanos = False
-    for modelo in (User, Document, ServiceRequest):
-        for fila in modelo.query.filter(modelo.public_id.is_(None)).all():
+    """Rellena public_id en filas que existían antes de este cambio."""
+    for modelo in _MODELOS_CON_PUBLIC_ID:
+        pendientes = modelo.query.filter(modelo.public_id.is_(None)).all()
+        for fila in pendientes:
             fila.public_id = uuid.uuid4().hex
-            huerfanos = True
-    if huerfanos:
-        db.session.commit()
+        if pendientes:
+            db.session.commit()
 
 
 def _seed_data(log=print):

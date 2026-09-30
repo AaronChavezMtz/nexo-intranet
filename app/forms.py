@@ -15,37 +15,72 @@ class LoginForm(FlaskForm):
 
 
 class UserForm(FlaskForm):
-    username = StringField("Usuario", validators=[DataRequired(), Length(max=64)])
-    full_name = StringField("Nombre completo", validators=[DataRequired(), Length(max=150)])
-    email = StringField("Correo electrónico", validators=[DataRequired(), Email(check_deliverability=False)])
-    role_id = SelectField("Perfil (rol)", coerce=int, validators=[DataRequired()])
+    username = StringField(
+        "Usuario",
+        validators=[DataRequired(message="El usuario es obligatorio."), Length(min=3, max=64)],
+    )
+    full_name = StringField(
+        "Nombre completo",
+        validators=[DataRequired(message="El nombre es obligatorio."), Length(min=3, max=150)],
+    )
+    email = StringField(
+        "Correo electrónico",
+        validators=[
+            DataRequired(message="El correo es obligatorio."),
+            # check_deliverability=False: en una intranet los correos suelen usar
+            # dominios internos (.local, .corp) que no tienen registro DNS público.
+            Email(check_deliverability=False, message="Ingresa un correo válido."),
+        ],
+    )
+    role_id = SelectField(
+        "Perfil (rol)", coerce=int,
+        validators=[DataRequired(message="Selecciona un perfil.")],
+    )
     department_id = SelectField("Departamento", coerce=int, validators=[Optional()])
     password = PasswordField(
         "Contraseña",
         validators=[Optional(), Length(min=6, message="Mínimo 6 caracteres")],
+        render_kw={"autocomplete": "new-password"},
     )
     confirm_password = PasswordField(
         "Confirmar contraseña",
         validators=[EqualTo("password", message="Las contraseñas no coinciden")],
+        render_kw={"autocomplete": "new-password"},
     )
     is_active_user = BooleanField("Usuario activo", default=True)
     submit = SubmitField("Guardar")
 
 
 class ChangePasswordForm(FlaskForm):
-    current_password = PasswordField("Contraseña actual", validators=[DataRequired()])
-    new_password = PasswordField("Nueva contraseña", validators=[DataRequired(), Length(min=6)])
+    current_password = PasswordField(
+        "Contraseña actual", validators=[DataRequired()],
+        render_kw={"autocomplete": "current-password"},
+    )
+    new_password = PasswordField(
+        "Nueva contraseña", validators=[DataRequired(), Length(min=6)],
+        render_kw={"autocomplete": "new-password"},
+    )
     confirm_password = PasswordField(
         "Confirmar nueva contraseña",
         validators=[DataRequired(), EqualTo("new_password", message="Las contraseñas no coinciden")],
+        render_kw={"autocomplete": "new-password"},
     )
     submit = SubmitField("Actualizar contraseña")
 
 
 class DocumentForm(FlaskForm):
-    title = StringField("Título", validators=[DataRequired(), Length(max=150)])
-    description = TextAreaField("Descripción", validators=[Optional(), Length(max=1000)])
-    category = StringField("Categoría", validators=[Optional(), Length(max=80)])
+    title = StringField(
+        "Título",
+        validators=[DataRequired(message="El título es obligatorio."), Length(min=3, max=150)],
+    )
+    description = TextAreaField(
+        "Descripción",
+        validators=[Optional(), Length(max=1000, message="Máximo 1000 caracteres.")],
+    )
+    category = StringField(
+        "Categoría",
+        validators=[Optional(), Length(max=80, message="Máximo 80 caracteres.")],
+    )
     department_id = SelectField("Departamento", coerce=int, validators=[Optional()])
     is_public = BooleanField("Visible para todos los colaboradores", default=True)
     file = FileField(
@@ -65,7 +100,7 @@ class ServiceRequestForm(FlaskForm):
     request_type_id = SelectField("Tipo de solicitud", coerce=int, validators=[DataRequired()])
     description = TextAreaField(
         "Descripción / detalle de tu solicitud",
-        validators=[DataRequired(), Length(max=2000)],
+        validators=[DataRequired(message="Describe tu solicitud."), Length(min=10, max=2000)],
     )
     submit = SubmitField("Enviar solicitud")
 
@@ -88,6 +123,15 @@ class RoleForm(FlaskForm):
 
 
 class DepartmentForm(FlaskForm):
-    name = StringField("Nombre del departamento", validators=[DataRequired(), Length(max=100)])
-    description = StringField("Descripción", validators=[Optional(), Length(max=255)])
+    name = StringField(
+        "Nombre del departamento",
+        validators=[
+            DataRequired(message="El nombre es obligatorio."),
+            Length(min=3, max=100, message="Debe tener entre 3 y 100 caracteres."),
+        ],
+    )
+    description = StringField(
+        "Descripción",
+        validators=[Optional(), Length(max=255, message="Máximo 255 caracteres.")],
+    )
     submit = SubmitField("Guardar departamento")

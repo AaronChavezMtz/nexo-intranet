@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.models import User, Role, Department, RequestType
@@ -9,6 +10,7 @@ from app.decorators import permission_required
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+# ------------------------------ Usuarios ------------------------------
 @admin_bp.route("/usuarios")
 @login_required
 @permission_required("manage_users")
@@ -32,8 +34,12 @@ def new_user():
             flash("La contraseña es obligatoria para un usuario nuevo.", "danger")
             return render_template("admin_user_form.html", form=form, modo="crear")
 
-        if User.query.filter_by(username=form.username.data).first():
+        if User.query.filter_by(username=form.username.data.strip()).first():
             flash("Ese nombre de usuario ya existe.", "danger")
+            return render_template("admin_user_form.html", form=form, modo="crear")
+
+        if User.query.filter_by(email=form.email.data.strip()).first():
+            flash("Ese correo ya está registrado por otro usuario.", "danger")
             return render_template("admin_user_form.html", form=form, modo="crear")
 
         usuario = User(
@@ -68,20 +74,34 @@ def edit_user(user_id):
 
     if request.method == "GET":
         form.department_id.data = usuario.department_id or 0
+        form.password.data = ""
+        form.confirm_password.data = ""
 
     if form.validate_on_submit():
-        usuario.username = form.username.data.strip()
-        usuario.full_name = form.full_name.data.strip()
-        usuario.email = form.email.data.strip()
-        usuario.role_id = form.role_id.data
-        usuario.department_id = form.department_id.data or None
-        usuario.is_active_user = form.is_active_user.data
-        if form.password.data:
-            usuario.set_password(form.password.data)
+        username_dup = User.query.filter(
+            User.username == form.username.data.strip(), User.id != usuario.id
+        ).first()
+        email_dup = User.query.filter(
+            User.email == form.email.data.strip(), User.id != usuario.id
+        ).first()
 
-        db.session.commit()
-        flash("Usuario actualizado correctamente.", "success")
-        return redirect(url_for("admin.list_users"))
+        if username_dup:
+            flash("Ese nombre de usuario ya lo usa otra persona.", "danger")
+        elif email_dup:
+            flash("Ese correo ya lo usa otra persona.", "danger")
+        else:
+            usuario.username = form.username.data.strip()
+            usuario.full_name = form.full_name.data.strip()
+            usuario.email = form.email.data.strip()
+            usuario.role_id = form.role_id.data
+            usuario.department_id = form.department_id.data or None
+            usuario.is_active_user = form.is_active_user.data
+            if form.password.data:
+                usuario.set_password(form.password.data)
+
+            db.session.commit()
+            flash("Usuario actualizado correctamente.", "success")
+            return redirect(url_for("admin.list_users"))
     elif request.method == "POST":
         flash("No se pudo guardar: revisa los campos marcados en rojo.", "danger")
 
@@ -98,12 +118,21 @@ def delete_user(user_id):
         flash("No puedes eliminar tu propio usuario.", "danger")
         return redirect(url_for("admin.list_users"))
 
-    db.session.delete(usuario)
-    db.session.commit()
-    flash("Usuario eliminado.", "info")
+    try:
+        db.session.delete(usuario)
+        db.session.commit()
+        flash("Usuario eliminado.", "info")
+    except IntegrityError:
+        db.session.rollback()
+        flash(
+            "No se puede eliminar: este usuario tiene documentos o solicitudes "
+            "asociadas. En su lugar, desactívalo desde 'Editar'.",
+            "danger",
+        )
     return redirect(url_for("admin.list_users"))
 
 
+# ------------------------------ Roles ------------------------------
 @admin_bp.route("/roles")
 @login_required
 @permission_required("manage_roles")
@@ -112,17 +141,69 @@ def list_roles():
     return render_template("admin_roles.html", roles=roles)
 
 
+# ------------------------------ Departamentos ------------------------------
 @admin_bp.route("/departamentos", methods=["GET", "POST"])
 @login_required
 @permission_required("manage_roles")
 def list_departments():
     form = DepartmentForm()
     if form.validate_on_submit():
-        depto = Department(name=form.name.data.strip(), description=form.description.data)
-        db.session.add(depto)
-        db.session.commit()
-        flash("Departamento creado.", "success")
-        return redirect(url_for("admin.list_departments"))
+        nombre = form.name.data.strip()
+        if Department.query.filter_by(name=nombre).first():
+            flash("Ya existe un departamento con ese nombre.", "danger")
+        else:
+            depto = Department(name=nombre, description=(form.description.data or "").strip())
+            db.session.add(depto)
+            db.session.commit()
+            flash("Departamento creado.", "success")
+            return redirect(url_for("admin.list_departments"))
+    elif request.method == "POST":
+        flash("No se pudo guardar: revisa los campos marcados en rojo.", "danger")
 
     departamentos = Department.query.order_by(Department.name).all()
     return render_template("admin_departments.html", departamentos=departamentos, form=form)
+
+
+@admin_bp.route("/departamentos/<string:dept_id>/editar", methods=["GET", "POST"])
+@login_required
+@permission_required("manage_roles")
+def edit_department(dept_id):
+    depto = Department.query.filter_by(public_id=dept_id).first_or_404()
+    form = DepartmentForm(obj=depto)
+
+    if form.validate_on_submit():
+        nombre = form.name.data.strip()
+        duplicado = Department.query.filter(
+            Department.name == nombre, Department.id != depto.id
+        ).first()
+        if duplicado:
+            flash("Ya existe otro departamento con ese nombre.", "danger")
+        else:
+            depto.name = nombre
+            depto.description = (form.description.data or "").strip()
+            db.session.commit()
+            flash("Departamento actualizado.", "success")
+            return redirect(url_for("admin.list_departments"))
+    elif request.method == "POST":
+        flash("No se pudo guardar: revisa los campos marcados en rojo.", "danger")
+
+    return render_template("admin_department_form.html", form=form, depto=depto)
+
+
+@admin_bp.route("/departamentos/<string:dept_id>/eliminar", methods=["POST"])
+@login_required
+@permission_required("manage_roles")
+def delete_department(dept_id):
+    depto = Department.query.filter_by(public_id=dept_id).first_or_404()
+    try:
+        db.session.delete(depto)
+        db.session.commit()
+        flash("Departamento eliminado.", "info")
+    except IntegrityError:
+        db.session.rollback()
+        flash(
+            "No se puede eliminar: hay usuarios, documentos o tipos de solicitud "
+            "asignados a este departamento.",
+            "danger",
+        )
+    return redirect(url_for("admin.list_departments"))

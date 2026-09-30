@@ -6,26 +6,44 @@
     <div class="card shadow-sm">
       <div class="card-header">{{ 'Editar usuario' if modo == 'editar' else 'Nuevo usuario' }}</div>
       <div class="card-body">
-        <form method="POST" novalidate>
+        <form method="POST" novalidate autocomplete="off">
           {{ form.hidden_tag() }}
+
+          {% if form.errors %}
+          <div class="alert alert-danger">
+            <b>No se pudo guardar.</b> Revisa lo siguiente:
+            <ul class="mb-0">
+              {% for field_name, errores in form.errors.items() %}
+                {% for error in errores %}
+                <li>{{ form[field_name].label.text }}: {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
           <div class="row">
             <div class="col-md-6 mb-3">
               {{ form.username.label(class="form-label") }}
-              {{ form.username(class="form-control") }}
+              {{ form.username(class="form-control" ~ (" is-invalid" if form.username.errors else "")) }}
+              {% for error in form.username.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6 mb-3">
               {{ form.full_name.label(class="form-label") }}
-              {{ form.full_name(class="form-control") }}
+              {{ form.full_name(class="form-control" ~ (" is-invalid" if form.full_name.errors else "")) }}
+              {% for error in form.full_name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
           </div>
           <div class="mb-3">
             {{ form.email.label(class="form-label") }}
-            {{ form.email(class="form-control") }}
+            {{ form.email(class="form-control" ~ (" is-invalid" if form.email.errors else "")) }}
+            {% for error in form.email.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
           <div class="row">
             <div class="col-md-6 mb-3">
               {{ form.role_id.label(class="form-label") }}
-              {{ form.role_id(class="form-select") }}
+              {{ form.role_id(class="form-select" ~ (" is-invalid" if form.role_id.errors else "")) }}
+              {% for error in form.role_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6 mb-3">
               {{ form.department_id.label(class="form-label") }}
@@ -35,12 +53,13 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               {{ form.password.label(class="form-label") }}
-              {{ form.password(class="form-control") }}
+              {{ form.password(class="form-control", value="") }}
               <div class="form-text">{{ 'Deja en blanco para no cambiarla.' if modo == 'editar' else 'Mínimo 6 caracteres.' }}</div>
+              {% for error in form.password.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6 mb-3">
               {{ form.confirm_password.label(class="form-label") }}
-              {{ form.confirm_password(class="form-control") }}
+              {{ form.confirm_password(class="form-control", value="") }}
               {% for error in form.confirm_password.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
             </div>
           </div>

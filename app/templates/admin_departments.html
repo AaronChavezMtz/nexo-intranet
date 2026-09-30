@@ -12,11 +12,13 @@
           {{ form.hidden_tag() }}
           <div class="mb-3">
             {{ form.name.label(class="form-label") }}
-            {{ form.name(class="form-control") }}
+            {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else "")) }}
+            {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
           <div class="mb-3">
             {{ form.description.label(class="form-label") }}
-            {{ form.description(class="form-control") }}
+            {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else "")) }}
+            {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
           {{ form.submit(class="btn btn-primary w-100") }}
         </form>
@@ -25,14 +27,21 @@
   </div>
 
   <div class="col-md-7">
-    <table class="table bg-white">
-      <thead class="table-light"><tr><th>Nombre</th><th>Descripción</th><th>Colaboradores</th></tr></thead>
+    <table class="table bg-white align-middle">
+      <thead class="table-light"><tr><th>Nombre</th><th>Descripción</th><th>Colaboradores</th><th></th></tr></thead>
       <tbody>
         {% for d in departamentos %}
         <tr>
           <td class="fw-semibold">{{ d.name }}</td>
           <td class="text-muted small">{{ d.description }}</td>
           <td>{{ d.users|length }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('admin.edit_department', dept_id=d.public_id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+            <form action="{{ url_for('admin.delete_department', dept_id=d.public_id) }}" method="POST" class="d-inline"
+                  onsubmit="return confirmAction(this, '¿Eliminar el departamento &quot;{{ d.name }}&quot;?');">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
