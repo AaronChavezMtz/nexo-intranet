@@ -30,6 +30,12 @@ class Config:
         "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
         "png", "jpg", "jpeg", "txt", "csv",
     }
+    # Usuarios protegidos: solo ellos mismos pueden editarse; nadie puede eliminarlos,
+    # renombrarlos, desactivarlos ni cambiarles el rol. Lista separada por comas,
+    # p. ej.: PROTECTED_USERNAMES=superadmin
+    PROTECTED_USERNAMES = {
+        u.strip() for u in os.environ.get("PROTECTED_USERNAMES", "").split(",") if u.strip()
+    }
 
     # Cookies de sesión
     SESSION_COOKIE_HTTPONLY = True

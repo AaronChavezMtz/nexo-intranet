@@ -12,6 +12,11 @@ from app.decorators import permission_required
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+def _es_protegido(usuario) -> bool:
+    """True si el usuario figura en PROTECTED_USERNAMES."""
+    return usuario.username in current_app.config.get("PROTECTED_USERNAMES", set())
+
+
 def _deja_sin_admins(usuario) -> bool:
     """True si eliminar, degradar o desactivar a este usuario dejaría al sistema
     sin ningún administrador activo."""
@@ -82,6 +87,13 @@ def new_user():
 @permission_required("manage_users")
 def edit_user(user_id):
     usuario = User.query.filter_by(public_id=user_id).first_or_404()
+
+    # Un usuario protegido solo puede ser editado por él mismo (se bloquea
+    # también el GET, para que ni siquiera se abra el formulario).
+    if _es_protegido(usuario) and usuario.id != current_user.id:
+        flash("Este usuario está protegido: solo él mismo puede editar su información.", "danger")
+        return redirect(url_for("admin.list_users"))
+
     form = UserForm(obj=usuario)
     form.role_id.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name).all()]
     form.department_id.choices = [(0, "-- Ninguno --")] + [
@@ -105,6 +117,15 @@ def edit_user(user_id):
             flash("Ese nombre de usuario ya lo usa otra persona.", "danger")
         elif email_dup:
             flash("Ese correo ya lo usa otra persona.", "danger")
+        elif _es_protegido(usuario) and (
+            form.username.data.strip() != usuario.username
+            or form.role_id.data != usuario.role_id
+            or not form.is_active_user.data
+        ):
+            flash(
+                "Un usuario protegido no puede renombrarse, cambiar de rol ni desactivarse.",
+                "danger",
+            )
         elif _deja_sin_admins(usuario) and (
             form.role_id.data != usuario.role_id or not form.is_active_user.data
         ):
@@ -136,6 +157,10 @@ def delete_user(user_id):
 
     if usuario.id == current_user.id:
         flash("No puedes eliminar tu propio usuario.", "danger")
+        return redirect(url_for("admin.list_users"))
+
+    if _es_protegido(usuario):
+        flash("Este usuario está protegido y no se puede eliminar.", "danger")
         return redirect(url_for("admin.list_users"))
 
     if _deja_sin_admins(usuario):

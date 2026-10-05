@@ -15,7 +15,7 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
 >
 > | Rol | Usuario | Contraseña |
 > |---|---|---|
-> | Administrador | `superadmin` | `Admin1234` |
+> | Administrador | `adminprueba` | `123_Admin` |
 > | Supervisor | `supervisorprueba` | `Supervisor1234` |
 > | Empleado | `ana.garcia` | `Empleado1234` |
 >
@@ -90,7 +90,7 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
 - **Gestión documental**: subir, categorizar, filtrar y descargar documentos. Un documento puede ser público o restringido: los no públicos solo los ven los usuarios de su mismo departamento y quienes tienen el permiso `manage_documents`. Solo este último permiso permite eliminar documentos.
 - **Solicitudes internas**: los colaboradores generan solicitudes con folio único; los responsables las asignan, actualizan su estado (Pendiente → En proceso → Aprobada/Rechazada/Cancelada) y dejan registro en una bitácora de seguimiento.
 - **Panel de administración**: alta, edición y baja de usuarios, gestión de departamentos y consulta de roles/permisos. Eliminar un usuario borra sus documentos (incluido el archivo físico), sus comentarios y las solicitudes que creó con su bitácora; las solicitudes que tenía asignadas no se borran, quedan sin responsable.
-- **Protección del último administrador**: el sistema impide eliminar, degradar o desactivar al último administrador activo.
+- **Protección de administradores**: el sistema impide eliminar, degradar o desactivar al último administrador activo, y permite marcar usuarios como protegidos (`PROTECTED_USERNAMES`): solo ellos pueden editar su propia información y ningún otro administrador puede modificarlos ni eliminarlos.
 - **Validación exhaustiva**: todos los formularios validan longitud, formato y campos obligatorios, mostrando errores específicos por campo.
 - **Identificadores no secuenciales**: las URLs usan identificadores públicos (UUID) en lugar de IDs autoincrementales, evitando exponer el volumen de registros del sistema.
 - **Interfaz responsiva** con una identidad visual corporativa propia (Bootstrap 5 + tipografía Inter).
@@ -160,10 +160,11 @@ nexo_intranet/
 | **Configuración estricta en producción** | `config.py` valida al arrancar que existan `SECRET_KEY` y `DATABASE_URL`; si falta alguna, la aplicación no inicia en lugar de usar valores por defecto inseguros. |
 | **Inicialización de BD al arrancar (`wsgi.py`)** | Los planes gratuitos de Render no dan acceso a Shell; así el despliegue deja la base lista sin pasos manuales. La inicialización es idempotente. |
 | **Administrador inicial condicionado** | El usuario `admin` solo se crea si no existe ningún administrador, y en producción su contraseña sale de una variable de entorno, no del código. |
+| **Usuarios protegidos por configuración** | `PROTECTED_USERNAMES` define cuentas intocables sin añadir columnas al modelo ni migraciones; la validación vive en el backend y la interfaz solo oculta los botones. |
 | **Documentos fuera de `static`** | Los archivos se guardan en `instance/uploads` y solo se sirven mediante una vista que verifica visibilidad y departamento. |
 | **SQLite en desarrollo, PostgreSQL en producción** | Arranque local sin instalar nada y un motor robusto en producción, apoyado en el ORM para ser agnóstico. |
 | **Eliminación en cascada explícita** | Borrar un usuario elimina sus documentos y solicitudes de forma controlada, evitando registros huérfanos. |
-| **Validación con Flask-WTF** | Validación y protección CSRF centralizadas en una sola capa para todos los formularios. |
+| **Validación con Flask-WTF** | Validación y protección CSRF de los formularios centralizadas en una sola capa. |
 
 ## Modelo de datos
 
@@ -261,6 +262,15 @@ Cualquier usuario autenticado puede crear solicitudes y consultar las propias.
 
 Los permisos se verifican con el decorador `@permission_required` en cada ruta, no por el nombre del rol. La asignación de permisos a cada rol se define en `seed.py` y se sincroniza en cada arranque de la aplicación, por lo que un cambio hecho directamente en la base de datos se sobrescribe en el siguiente reinicio.
 
+### Usuarios protegidos
+
+Los usuarios listados en `PROTECTED_USERNAMES` (por ejemplo, la cuenta de superadministrador) tienen reglas adicionales:
+
+- Solo ellos pueden editar su propia información (nombre completo, correo, departamento y contraseña). Ningún otro administrador puede abrir su formulario de edición.
+- Nadie puede eliminarlos.
+- No pueden renombrarse, cambiar de rol ni desactivarse.
+- Pueden crear otros administradores con normalidad; estos no tienen control sobre la cuenta protegida.
+
 ## Instalación local
 
 ### Requisitos
@@ -299,6 +309,7 @@ La aplicación queda disponible en `http://localhost:5000`.
 | `SECRET_KEY` | Sí en producción | Clave para firmar sesiones y formularios. Generar con `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `DATABASE_URL` | Sí en producción | Cadena de conexión a PostgreSQL. En desarrollo se usa SQLite si no se define |
 | `ADMIN_INITIAL_PASSWORD` | Solo en producción, si aún no existe ningún administrador | Contraseña del administrador inicial. Sin ella, en producción no se crea ningún usuario inicial |
+| `PROTECTED_USERNAMES` | No | Usuarios (separados por coma) protegidos: solo ellos mismos pueden editarse, y nadie puede eliminarlos, renombrarlos, desactivarlos ni cambiarles el rol |
 
 En producción, la aplicación no arranca si falta `SECRET_KEY` o `DATABASE_URL`.
 
@@ -325,7 +336,7 @@ El proyecto está preparado para desplegarse en **Render** (o cualquier platafor
 
 1. Crear una base de datos **PostgreSQL** administrada y copiar su `DATABASE_URL`.
 2. Crear un **Web Service** conectado al repositorio de GitHub.
-3. Definir las variables `FLASK_ENV=production`, `SECRET_KEY` y `DATABASE_URL`. En el primer despliegue, definir también `ADMIN_INITIAL_PASSWORD` para crear el administrador inicial.
+3. Definir las variables `FLASK_ENV=production`, `SECRET_KEY` y `DATABASE_URL`. En el primer despliegue, definir también `ADMIN_INITIAL_PASSWORD` para crear el administrador inicial y, opcionalmente, `PROTECTED_USERNAMES` para proteger cuentas.
 
 Detalles de la configuración:
 
@@ -336,13 +347,13 @@ Detalles de la configuración:
 ## Seguridad
 
 - Contraseñas almacenadas como hash con Werkzeug (`scrypt` por defecto), nunca en texto plano.
-- Protección CSRF en todos los formularios (Flask-WTF).
+- Protección CSRF en los formularios de la aplicación (Flask-WTF), complementada con cookies `SameSite=Lax`.
 - Control de acceso mediante decoradores de permisos (`@permission_required`) y comprobaciones de propiedad o departamento en las vistas que muestran datos individuales (solicitudes y descargas de documentos).
 - Cookies de sesión `HttpOnly`, `SameSite=Lax`, y `Secure` en producción.
 - Identificadores públicos (UUID) en URLs en lugar de IDs autoincrementales.
 - Subida de archivos con validación de extensión y tamaño máximo (15 MB), nombres de almacenamiento aleatorios y descarga únicamente a través de una vista que verifica la visibilidad del documento. Los archivos no se sirven desde `static`.
 - Sin credenciales fijas en producción: el administrador inicial solo se crea si no hay ninguno, y su contraseña proviene de una variable de entorno.
-- El sistema impide eliminar, degradar o desactivar al último administrador activo.
+- Protección de administradores: no se puede eliminar, degradar ni desactivar al último administrador activo, y las cuentas listadas en `PROTECTED_USERNAMES` solo pueden ser editadas por sí mismas. Las validaciones se aplican en el servidor, no solo en la interfaz.
 - Eliminación en cascada controlada: borrar un usuario elimina de forma explícita sus documentos, comentarios y solicitudes creadas, evitando registros huérfanos.
 - Confirmación explícita (modal) antes de cualquier acción destructiva.
 
@@ -350,11 +361,13 @@ Detalles de la configuración:
 
 - **Archivos subidos en disco local** (`instance/uploads`): en plataformas con sistema de archivos efímero, como el plan gratuito de Render, los documentos se pierden al reiniciar o volver a desplegar. Para producción real se recomienda almacenamiento externo (S3, Cloudinary o un disco persistente).
 - **Sin migraciones de esquema**: salvo la incorporación de `public_id`, que `seed.py` aplica de forma automática, los cambios en los modelos requieren recrear o ajustar la base manualmente hasta incorporar Flask-Migrate.
+- **Acciones de eliminar sin token CSRF**: los botones de eliminar son envíos POST simples; hoy se apoyan en las cookies `SameSite=Lax` y en la confirmación previa. Ver roadmap.
 - **Folios**: se generan como el siguiente al mayor existente y, ante una colisión por creaciones simultáneas, se reintenta. Una secuencia de base de datos sería más robusta.
 - **Sin pruebas automatizadas** por ahora (ver roadmap).
 
 ## Roadmap
 
+- [ ] Protección CSRF global (`CSRFProtect`) con token también en las acciones de eliminar
 - [ ] Almacenamiento externo de documentos (S3 / Cloudinary)
 - [ ] Notificaciones por correo al cambiar el estado de una solicitud
 - [ ] Exportación de reportes (PDF/Excel) de solicitudes por periodo
