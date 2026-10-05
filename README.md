@@ -367,6 +367,6 @@ Detalles de la configuración:
 
 **Aarón Yosef Chávez Martínez** · [GitHub](https://github.com/AaronChavezMtz) · [LinkedIn](https://www.linkedin.com/in/aaron-chavez-99bbb8393)
 
-## Licencia
+## Licenci
 
 Distribuido bajo la licencia MIT — ver [LICENSE](LICENSE).
