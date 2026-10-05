@@ -3,7 +3,7 @@ import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
-def _normalize_db_url(url: str) -> str:
+def _normalize_db_url(url):
     """Algunos proveedores (Render, Heroku, Railway) entregan 'postgres://',
     pero SQLAlchemy 2.x requiere el esquema 'postgresql://'."""
     if url and url.startswith("postgres://"):
@@ -22,7 +22,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, "app", "static", "uploads")
+    # Fuera de 'static' para que los archivos solo se sirvan a través de la
+    # vista de descarga, que verifica permisos y departamento.
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "instance", "uploads")
     MAX_CONTENT_LENGTH = 15 * 1024 * 1024  # 15 MB máximo por archivo
     ALLOWED_EXTENSIONS = {
         "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
@@ -46,12 +48,16 @@ class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
+    # Sin valor por defecto: en producción la base debe ser explícita.
+    SQLALCHEMY_DATABASE_URI = _normalize_db_url(os.environ.get("DATABASE_URL"))
 
-    def __init__(self):
-        if not os.environ.get("SECRET_KEY"):
+    @staticmethod
+    def validate():
+        faltantes = [v for v in ("SECRET_KEY", "DATABASE_URL") if not os.environ.get(v)]
+        if faltantes:
             raise RuntimeError(
-                "SECRET_KEY no está definida. En producción es obligatorio configurarla "
-                "como variable de entorno (no usar valores por defecto)."
+                f"Faltan variables de entorno obligatorias en producción: {', '.join(faltantes)}. "
+                "No se usan valores por defecto en este entorno."
             )
 
 
@@ -63,4 +69,8 @@ config_by_name = {
 
 def get_config():
     env = os.environ.get("FLASK_ENV", "development").lower()
-    return config_by_name.get(env, DevelopmentConfig)
+    cfg = config_by_name.get(env, DevelopmentConfig)
+    validar = getattr(cfg, "validate", None)
+    if validar:
+        validar()
+    return cfg

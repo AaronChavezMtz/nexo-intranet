@@ -12,6 +12,20 @@ from app.decorators import permission_required
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+def _deja_sin_admins(usuario) -> bool:
+    """True si eliminar, degradar o desactivar a este usuario dejaría al sistema
+    sin ningún administrador activo."""
+    admin_role = Role.query.filter_by(name="Administrador").first()
+    if not admin_role or usuario.role_id != admin_role.id:
+        return False
+    otros = User.query.filter(
+        User.role_id == admin_role.id,
+        User.is_active_user.is_(True),
+        User.id != usuario.id,
+    ).count()
+    return otros == 0
+
+
 # ------------------------------ Usuarios ------------------------------
 @admin_bp.route("/usuarios")
 @login_required
@@ -91,6 +105,10 @@ def edit_user(user_id):
             flash("Ese nombre de usuario ya lo usa otra persona.", "danger")
         elif email_dup:
             flash("Ese correo ya lo usa otra persona.", "danger")
+        elif _deja_sin_admins(usuario) and (
+            form.role_id.data != usuario.role_id or not form.is_active_user.data
+        ):
+            flash("Debe quedar al menos un administrador activo en el sistema.", "danger")
         else:
             usuario.username = form.username.data.strip()
             usuario.full_name = form.full_name.data.strip()
@@ -120,6 +138,10 @@ def delete_user(user_id):
         flash("No puedes eliminar tu propio usuario.", "danger")
         return redirect(url_for("admin.list_users"))
 
+    if _deja_sin_admins(usuario):
+        flash("No puedes eliminar al último administrador activo del sistema.", "danger")
+        return redirect(url_for("admin.list_users"))
+
     try:
         # 1. Elimina los documentos que subió (y su archivo físico en el servidor)
         for doc in Document.query.filter_by(uploaded_by_id=usuario.id).all():
@@ -131,7 +153,7 @@ def delete_user(user_id):
         # 2. Elimina comentarios que dejó en solicitudes de otras personas
         RequestComment.query.filter_by(user_id=usuario.id).delete(synchronize_session=False)
 
-        # 3. Si era supervisor de solicitudes ajenas, las deja sin asignar (no las borra)
+        # 3. Si era responsable de solicitudes ajenas, las deja sin asignar (no las borra)
         ServiceRequest.query.filter_by(assigned_to_id=usuario.id).update(
             {"assigned_to_id": None}, synchronize_session=False
         )

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.models import ServiceRequest, RequestType, RequestComment, User
@@ -10,8 +11,11 @@ requests_bp = Blueprint("requests", __name__, url_prefix="/solicitudes")
 
 
 def _generar_folio() -> str:
-    total = ServiceRequest.query.count() + 1
-    return f"SOL-{total:05d}"
+    """Siguiente folio a partir del mayor existente (el relleno con ceros permite
+    comparar los folios como texto). Eliminar solicitudes no genera duplicados."""
+    ultimo = db.session.query(db.func.max(ServiceRequest.folio)).scalar()
+    numero = int(ultimo.split("-")[1]) + 1 if ultimo else 1
+    return f"SOL-{numero:05d}"
 
 
 @requests_bp.route("/")
@@ -42,15 +46,28 @@ def new_request():
     ]
 
     if form.validate_on_submit():
-        solicitud = ServiceRequest(
-            folio=_generar_folio(),
-            request_type_id=form.request_type_id.data,
-            requester_id=current_user.id,
-            description=form.description.data,
-            status="Pendiente",
-        )
-        db.session.add(solicitud)
-        db.session.flush()
+        solicitud = None
+        # Si dos solicitudes se crean al mismo tiempo pueden calcular el mismo
+        # folio; la restricción de unicidad lo detecta y se reintenta.
+        for _ in range(3):
+            candidata = ServiceRequest(
+                folio=_generar_folio(),
+                request_type_id=form.request_type_id.data,
+                requester_id=current_user.id,
+                description=form.description.data,
+                status="Pendiente",
+            )
+            db.session.add(candidata)
+            try:
+                db.session.flush()
+                solicitud = candidata
+                break
+            except IntegrityError:
+                db.session.rollback()
+
+        if solicitud is None:
+            flash("No se pudo generar el folio de la solicitud. Inténtalo de nuevo.", "danger")
+            return render_template("new_request.html", form=form)
 
         primer_comentario = RequestComment(
             service_request_id=solicitud.id,

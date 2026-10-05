@@ -1,3 +1,4 @@
+import os
 import uuid
 import click
 from sqlalchemy import inspect, text
@@ -64,6 +65,36 @@ def _backfill_public_ids():
             db.session.commit()
 
 
+def _crear_admin_inicial(deptos_obj, log):
+    """Crea el administrador inicial SOLO si no existe ningún usuario con rol
+    Administrador. Así, si el administrador definitivo tiene otro nombre
+    (por ejemplo 'superadmin'), este usuario no reaparece en cada despliegue."""
+    admin_role = Role.query.filter_by(name="Administrador").first()
+
+    if User.query.filter_by(role_id=admin_role.id).first():
+        log("Ya existe al menos un administrador; no se crea el usuario inicial.")
+        return
+
+    es_produccion = os.environ.get("FLASK_ENV", "development").lower() == "production"
+    password = os.environ.get("ADMIN_INITIAL_PASSWORD") or (None if es_produccion else "Admin123!")
+
+    if password is None:
+        log("No hay administradores y ADMIN_INITIAL_PASSWORD no está definida: no se crea ninguno.")
+        return
+
+    admin = User(
+        username="admin",
+        full_name="Administrador del Sistema",
+        email="admin@nexo-intranet.local",
+        role_id=admin_role.id,
+        department_id=deptos_obj["Sistemas"].id,
+        is_active_user=True,
+    )
+    admin.set_password(password)
+    db.session.add(admin)
+    log("Usuario administrador inicial creado: admin")
+
+
 def _seed_data(log=print):
     """Crea las tablas e inserta datos base. Segura de llamar más de una vez."""
     _ensure_public_id_columns()
@@ -100,21 +131,7 @@ def _seed_data(log=print):
         if not RequestType.query.filter_by(name=name).first():
             db.session.add(RequestType(name=name, department_id=deptos_obj[depto_name].id))
 
-    if not User.query.filter_by(username="admin").first():
-        admin_role = Role.query.filter_by(name="Administrador").first()
-        admin = User(
-            username="admin",
-            full_name="Administrador del Sistema",
-            email="admin@nexo-intranet.local",
-            role_id=admin_role.id,
-            department_id=deptos_obj["Sistemas"].id,
-            is_active_user=True,
-        )
-        admin.set_password("Admin123!")
-        db.session.add(admin)
-        log("Usuario admin creado -> usuario: admin | contraseña: Admin123!")
-    else:
-        log("El usuario admin ya existía, no se modificó.")
+    _crear_admin_inicial(deptos_obj, log)
 
     db.session.commit()
     log("Base de datos inicializada correctamente.")
