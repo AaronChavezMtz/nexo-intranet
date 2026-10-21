@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-Blueprints-000000?logo=flask&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Producción-4169E1?logo=postgresql&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-Azure%20SQL-CC2927?logo=microsoftsqlserver&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)
 ![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -19,7 +19,7 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
 > | Supervisor | `supervisorprueba` | `Supervisor1234` |
 > | Empleado | `ana.garcia` | `Empleado1234` |
 >
-> *Nota: el servicio gratuito de Render puede tardar ~30-60 s en responder la primera vez (arranque en frío). Los datos de la demo son ficticios; no subas información real.*
+> *Nota: el servicio gratuito de Render puede tardar ~30-60 s en responder la primera vez (arranque en frío), y la base de datos serverless de Azure también se pausa por inactividad, por lo que el primer acceso puede tardar un poco más. Los datos de la demo son ficticios; no subas información real.*
 
 > Proyecto personal construido para practicar arquitectura de aplicaciones web, autenticación y autorización basada en roles, modelado de bases de datos relacionales y despliegue en producción.
 
@@ -100,12 +100,12 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
 | Capa | Tecnología |
 |---|---|
 | Backend | Python 3.11+, Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF |
-| Base de datos | SQLite (desarrollo) / PostgreSQL (producción) |
+| Base de datos | SQLite (desarrollo) / Azure SQL Database, motor SQL Server (producción), mediante SQLAlchemy y el driver `pymssql` |
 | Frontend | HTML5, CSS3, JavaScript, Jinja2, Bootstrap 5 |
 | Servidor de producción | Gunicorn |
 | Autenticación | Hash de contraseñas (Werkzeug, `scrypt` por defecto), sesiones con Flask-Login |
 | Control de versiones | Git / GitHub |
-| Hosting | Render (Web Service + PostgreSQL administrado) |
+| Hosting | Render (Web Service) + Azure SQL Database (nivel gratuito serverless) |
 
 ## Arquitectura
 
@@ -116,7 +116,7 @@ flowchart LR
     C --> D[Blueprints<br/>auth · main · documents · requests · admin]
     D --> E["@permission_required<br/>control de acceso"]
     E --> F[Flask-SQLAlchemy]
-    F --> G[(PostgreSQL / SQLite)]
+    F --> G[(Azure SQL / SQLite)]
     D --> H[Flask-WTF<br/>validación + CSRF]
     D --> I[Jinja2 + Bootstrap 5]
 ```
@@ -162,7 +162,9 @@ nexo_intranet/
 | **Administrador inicial condicionado** | El usuario `admin` solo se crea si no existe ningún administrador, y en producción su contraseña sale de una variable de entorno, no del código. |
 | **Usuarios protegidos por configuración** | `PROTECTED_USERNAMES` define cuentas intocables sin añadir columnas al modelo ni migraciones; la validación vive en el backend y la interfaz solo oculta los botones. |
 | **Documentos fuera de `static`** | Los archivos se guardan en `instance/uploads` y solo se sirven mediante una vista que verifica visibilidad y departamento. |
-| **SQLite en desarrollo, PostgreSQL en producción** | Arranque local sin instalar nada y un motor robusto en producción, apoyado en el ORM para ser agnóstico. |
+| **SQLite en desarrollo, SQL Server (Azure SQL) en producción** | Arranque local sin instalar nada y un motor administrado en producción; el ORM mantiene el código independiente del motor. |
+| **Cuenta de base de datos con privilegios limitados** | La aplicación se conecta con un usuario que solo puede leer, escribir y crear tablas en su base, no con el administrador del servidor. |
+| **Opciones de conexión tolerantes a la pausa** | La base serverless se pausa por inactividad; la aplicación espera hasta 60 s al conectar y reciclan conexiones inactivas, en lugar de fallar en el primer acceso. |
 | **Eliminación en cascada explícita** | Borrar un usuario elimina sus documentos y solicitudes de forma controlada, evitando registros huérfanos. |
 | **Validación con Flask-WTF** | Validación y protección CSRF de los formularios centralizadas en una sola capa. |
 
@@ -273,6 +275,8 @@ Los usuarios listados en `PROTECTED_USERNAMES` (por ejemplo, la cuenta de supera
 
 ## Instalación local
 
+En desarrollo la aplicación usa SQLite, por lo que no necesitas instalar ni configurar ningún motor de base de datos.
+
 ### Requisitos
 
 - Python 3.11+
@@ -307,7 +311,7 @@ La aplicación queda disponible en `http://localhost:5000`.
 |---|---|---|
 | `FLASK_ENV` | Sí | `development` o `production` |
 | `SECRET_KEY` | Sí en producción | Clave para firmar sesiones y formularios. Generar con `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `DATABASE_URL` | Sí en producción | Cadena de conexión a PostgreSQL. En desarrollo se usa SQLite si no se define |
+| `DATABASE_URL` | Sí en producción | Cadena de conexión SQLAlchemy a SQL Server, por ejemplo `mssql+pymssql://usuario:clave@servidor.database.windows.net:1433/base`. La contraseña debe ir codificada para URL. En desarrollo se usa SQLite si no se define |
 | `ADMIN_INITIAL_PASSWORD` | Solo en producción, si aún no existe ningún administrador | Contraseña del administrador inicial. Sin ella, en producción no se crea ningún usuario inicial |
 | `PROTECTED_USERNAMES` | No | Usuarios (separados por coma) protegidos: solo ellos mismos pueden editarse, y nadie puede eliminarlos, renombrarlos, desactivarlos ni cambiarles el rol |
 
@@ -332,11 +336,21 @@ En producción, la aplicación no arranca si falta `SECRET_KEY` o `DATABASE_URL`
 
 ## Despliegue en producción
 
-El proyecto está preparado para desplegarse en **Render** (o cualquier plataforma compatible con Gunicorn + PostgreSQL):
+El proyecto está preparado para desplegarse en **Render** con una base **Azure SQL Database** (o cualquier plataforma compatible con Gunicorn y SQL Server):
 
-1. Crear una base de datos **PostgreSQL** administrada y copiar su `DATABASE_URL`.
-2. Crear un **Web Service** conectado al repositorio de GitHub.
-3. Definir las variables `FLASK_ENV=production`, `SECRET_KEY` y `DATABASE_URL`. En el primer despliegue, definir también `ADMIN_INITIAL_PASSWORD` para crear el administrador inicial y, opcionalmente, `PROTECTED_USERNAMES` para proteger cuentas.
+1. Crear una base **Azure SQL Database** (la oferta gratuita serverless es suficiente) con autenticación SQL habilitada.
+2. Crear en esa base un usuario de aplicación con permisos limitados (`db_datareader`, `db_datawriter` y `db_ddladmin`, este último para que la aplicación pueda crear sus tablas al arrancar):
+
+```sql
+   CREATE USER nexo_app WITH PASSWORD = 'clave-larga-y-aleatoria';
+   ALTER ROLE db_datareader ADD MEMBER nexo_app;
+   ALTER ROLE db_datawriter ADD MEMBER nexo_app;
+   ALTER ROLE db_ddladmin  ADD MEMBER nexo_app;
+```
+
+3. Configurar el firewall del servidor SQL para permitir las conexiones desde los rangos de salida de Render.
+4. Crear un **Web Service** conectado al repositorio de GitHub, con un comando de inicio como `gunicorn wsgi:app --timeout 120` (el tiempo extra permite que la base serverless se reanude).
+5. Definir las variables `FLASK_ENV=production`, `SECRET_KEY` y `DATABASE_URL`. En el primer despliegue, definir también `ADMIN_INITIAL_PASSWORD` para crear el administrador inicial y, opcionalmente, `PROTECTED_USERNAMES` para proteger cuentas.
 
 Detalles de la configuración:
 
@@ -353,22 +367,26 @@ Detalles de la configuración:
 - Identificadores públicos (UUID) en URLs en lugar de IDs autoincrementales.
 - Subida de archivos con validación de extensión y tamaño máximo (15 MB), nombres de almacenamiento aleatorios y descarga únicamente a través de una vista que verifica la visibilidad del documento. Los archivos no se sirven desde `static`.
 - Sin credenciales fijas en producción: el administrador inicial solo se crea si no hay ninguno, y su contraseña proviene de una variable de entorno.
+- Conexión a la base de datos cifrada (TLS, requerido por Azure SQL) con un usuario de privilegios limitados, distinto del administrador del servidor.
 - Protección de administradores: no se puede eliminar, degradar ni desactivar al último administrador activo, y las cuentas listadas en `PROTECTED_USERNAMES` solo pueden ser editadas por sí mismas. Las validaciones se aplican en el servidor, no solo en la interfaz.
 - Eliminación en cascada controlada: borrar un usuario elimina de forma explícita sus documentos, comentarios y solicitudes creadas, evitando registros huérfanos.
 - Confirmación explícita (modal) antes de cualquier acción destructiva.
 
 ## Limitaciones conocidas
 
-- **Archivos subidos en disco local** (`instance/uploads`): en plataformas con sistema de archivos efímero, como el plan gratuito de Render, los documentos se pierden al reiniciar o volver a desplegar. Para producción real se recomienda almacenamiento externo (S3, Cloudinary o un disco persistente).
-- **Sin migraciones de esquema**: salvo la incorporación de `public_id`, que `seed.py` aplica de forma automática, los cambios en los modelos requieren recrear o ajustar la base manualmente hasta incorporar Flask-Migrate.
+- **Archivos subidos en disco local** (`instance/uploads`): en plataformas con sistema de archivos efímero, como el plan gratuito de Render, los documentos se pierden al reiniciar o volver a desplegar. Para producción real se recomienda almacenamiento externo (S3, Cloudinary, Azure Blob Storage o un disco persistente).
+- **Base de datos serverless**: el nivel gratuito de Azure SQL se pausa tras un periodo de inactividad, por lo que el primer acceso posterior puede tardar hasta un minuto en responder.
+- **Firewall de la base de datos**: Render no ofrece IPs de salida fijas en el plan gratuito, por lo que en la demo el servidor SQL admite conexiones desde cualquier IP, protegidas únicamente por credenciales de un usuario con privilegios limitados. En un despliegue real debe restringirse (IPs fijas, red privada o alojar la aplicación dentro de Azure).
+- **Sin migraciones de esquema**: los cambios en los modelos requieren recrear o ajustar la base manualmente hasta incorporar Flask-Migrate.
 - **Acciones de eliminar sin token CSRF**: los botones de eliminar son envíos POST simples; hoy se apoyan en las cookies `SameSite=Lax` y en la confirmación previa. Ver roadmap.
 - **Folios**: se generan como el siguiente al mayor existente y, ante una colisión por creaciones simultáneas, se reintenta. Una secuencia de base de datos sería más robusta.
 - **Sin pruebas automatizadas** por ahora (ver roadmap).
 
 ## Roadmap
 
+- [ ] Restringir el firewall de la base de datos (IPs fijas o red privada)
 - [ ] Protección CSRF global (`CSRFProtect`) con token también en las acciones de eliminar
-- [ ] Almacenamiento externo de documentos (S3 / Cloudinary)
+- [ ] Almacenamiento externo de documentos (S3 / Cloudinary / Azure Blob Storage)
 - [ ] Notificaciones por correo al cambiar el estado de una solicitud
 - [ ] Exportación de reportes (PDF/Excel) de solicitudes por periodo
 - [ ] Migraciones de esquema con Flask-Migrate/Alembic
