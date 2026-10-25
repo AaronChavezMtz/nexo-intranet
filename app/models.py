@@ -74,6 +74,11 @@ class User(UserMixin, db.Model):
     requests_made = db.relationship("ServiceRequest", backref="requester", lazy=True,
                                      foreign_keys="ServiceRequest.requester_id")
 
+    def get_id(self):
+        # La sesión guarda el public_id: tras reiniciar la demo los id numéricos
+        # se reasignan y una sesión vieja no debe apuntar a otro usuario.
+        return self.public_id
+
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
 

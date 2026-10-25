@@ -49,7 +49,7 @@ def create_app(config_class=None):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return models.User.query.get(int(user_id))
+        return models.User.query.filter_by(public_id=user_id).first()
 
     from app.seed import register_seed_command
     register_seed_command(app)

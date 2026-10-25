@@ -1,0 +1,17 @@
+NEXO INTRANET - DOCUMENTO DE EJEMPLO
+====================================
+
+Este archivo forma parte de los datos de demostración de Nexo Intranet.
+Su contenido es ficticio y se usa como muestra para todos los documentos
+precargados (políticas, formatos, manuales y reportes).
+
+Contenido de muestra
+--------------------
+1. Objetivo: describir de forma breve el propósito del documento.
+2. Alcance: aplica a todo el personal del área correspondiente.
+3. Responsables: el área que publica el documento es la encargada de
+   mantenerlo actualizado.
+4. Vigencia: a partir de su publicación en la intranet.
+
+Para dudas sobre este documento, levanta una solicitud desde el módulo
+"Solicitudes" dirigida al área correspondiente.

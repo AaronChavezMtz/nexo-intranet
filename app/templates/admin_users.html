@@ -4,7 +4,15 @@
 {% set protegidos = config.get('PROTECTED_USERNAMES', []) %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3><i class="bi bi-people"></i> Usuarios</h3>
-  <a href="{{ url_for('admin.new_user') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo usuario</a>
+  <div class="d-flex gap-2">
+    {% if current_user.username in protegidos %}
+    <form action="{{ url_for('admin.reset_demo_view') }}" method="POST"
+          onsubmit="return confirmAction(this, '¿Reiniciar la demo? Se BORRARÁN todos los datos y se recargarán los de ejemplo. Tu cuenta se conserva.');">
+      <button class="btn btn-outline-danger"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar demo</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('admin.new_user') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo usuario</a>
+  </div>
 </div>
 <div class="table-responsive">
 <table class="table table-hover bg-white align-middle">

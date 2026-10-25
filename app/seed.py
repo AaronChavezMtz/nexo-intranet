@@ -1,8 +1,11 @@
 import os
 import click
 
+from flask import current_app
+
 from app import db
-from app.models import Role, Permission, Department, RequestType, User
+from app.demo import seed_demo, restaurar_archivos_demo
+from app.models import Role, Permission, Department, RequestType, User, Document
 
 PERMISSIONS = [
     ("manage_users", "Crear, editar y eliminar usuarios"),
@@ -32,14 +35,16 @@ REQUEST_TYPES = [
     ("Constancia laboral", "Recursos Humanos"),
 ]
 
+SUPERADMIN = "superadmin"
+
+
 def _crear_admin_inicial(deptos_obj, log):
-    """Crea el administrador inicial SOLO si no existe ningún usuario con rol
-    Administrador. Así, si el administrador definitivo tiene otro nombre
-    (por ejemplo 'superadmin'), este usuario no reaparece en cada despliegue."""
+    """Crea la cuenta 'superadmin' SOLO si todavía no existe. Las cuentas demo
+    también son administradoras, por eso se busca por nombre y no por rol."""
     admin_role = Role.query.filter_by(name="Administrador").first()
 
-    if User.query.filter_by(role_id=admin_role.id).first():
-        log("Ya existe al menos un administrador; no se crea el usuario inicial.")
+    if User.query.filter_by(username=SUPERADMIN).first():
+        log("La cuenta superadmin ya existe; no se crea de nuevo.")
         return
 
     es_produccion = os.environ.get("FLASK_ENV", "development").lower() == "production"
@@ -50,20 +55,21 @@ def _crear_admin_inicial(deptos_obj, log):
         return
 
     admin = User(
-        username="admin",
+        username=SUPERADMIN,
         full_name="Administrador del Sistema",
-        email="admin@nexo-intranet.local",
+        email="superadmin@nexo-intranet.local",
         role_id=admin_role.id,
         department_id=deptos_obj["Sistemas"].id,
         is_active_user=True,
     )
     admin.set_password(password)
     db.session.add(admin)
-    log("Usuario administrador inicial creado: admin")
+    log("Usuario administrador inicial creado: superadmin")
 
 
-def _seed_data(log=print):
-    """Crea las tablas e inserta datos base. Segura de llamar más de una vez."""
+def _seed_data(log=print, conservados=()):
+    """Crea las tablas e inserta datos base y demo. Segura de llamar más de una vez.
+    'conservados' son cuentas que reset_demo vuelve a insertar tal como estaban."""
     db.create_all()
 
     permisos_obj = {}
@@ -96,13 +102,51 @@ def _seed_data(log=print):
         if not RequestType.query.filter_by(name=name).first():
             db.session.add(RequestType(name=name, department_id=deptos_obj[depto_name].id))
 
+    roles_obj = {r.name: r for r in Role.query.all()}
+    for c in conservados:
+        db.session.add(User(
+            public_id=c["public_id"], username=c["username"], email=c["email"],
+            full_name=c["full_name"], password_hash=c["password_hash"], is_active_user=True,
+            role_id=roles_obj[c["rol"]].id,
+            department_id=deptos_obj[c["depto"]].id if c["depto"] in deptos_obj else None,
+        ))
+
     _crear_admin_inicial(deptos_obj, log)
 
     db.session.commit()
+    seed_demo(log)
+    restaurar_archivos_demo()
     log("Base de datos inicializada correctamente.")
+
+
+def reset_demo(log=print):
+    """Borra TODAS las tablas y vuelve a crear la demo desde cero. Las cuentas
+    protegidas (superadmin) se conservan con su contraseña y su sesión actual."""
+    protegidos = current_app.config["PROTECTED_USERNAMES"]
+    conservados = [
+        {"public_id": u.public_id, "username": u.username, "email": u.email,
+         "full_name": u.full_name, "password_hash": u.password_hash,
+         "rol": u.role.name, "depto": u.department.name if u.department else None}
+        for u in User.query.filter(User.username.in_(protegidos))
+    ]
+
+    carpeta = current_app.config["UPLOAD_FOLDER"]
+    for (nombre,) in db.session.query(Document.stored_filename):
+        ruta = os.path.join(carpeta, nombre)
+        if os.path.exists(ruta):
+            os.remove(ruta)
+
+    db.session.remove()
+    db.drop_all()
+    _seed_data(log=log, conservados=conservados)
 
 
 def register_seed_command(app):
     @app.cli.command("seed-db")
     def seed_db():
         _seed_data(log=click.echo)
+
+    @app.cli.command("reset-demo")
+    @click.confirmation_option(prompt="Esto BORRA todos los datos y recrea la demo. ¿Continuar?")
+    def reset_demo_cmd():
+        reset_demo(log=click.echo)

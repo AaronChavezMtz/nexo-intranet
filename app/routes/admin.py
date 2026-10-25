@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -8,6 +8,7 @@ from app import db
 from app.models import User, Role, Department, RequestType, Document, ServiceRequest, RequestComment
 from app.forms import UserForm, RoleForm, DepartmentForm
 from app.decorators import permission_required
+from app.seed import reset_demo
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -272,3 +273,15 @@ def delete_department(dept_id):
             "danger",
         )
     return redirect(url_for("admin.list_departments"))
+
+
+# ------------------------------ Demo ------------------------------
+@admin_bp.route("/reiniciar-demo", methods=["POST"])
+@login_required
+def reset_demo_view():
+    # Solo cuentas protegidas: las cuentas demo son públicas y no deben poder borrarlo todo.
+    if not _es_protegido(current_user):
+        abort(403)
+    reset_demo(log=current_app.logger.info)
+    flash("Demo reiniciada: se restauraron los datos de ejemplo.", "success")
+    return redirect(url_for("admin.list_users"))

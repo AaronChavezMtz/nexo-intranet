@@ -159,7 +159,8 @@ nexo_intranet/
 | **UUID como identificador público** | Evita exponer el volumen de registros y los *IDOR* por enumeración de IDs; el `id` autoincremental queda solo como clave interna. |
 | **Configuración estricta en producción** | `config.py` valida al arrancar que existan `SECRET_KEY` y `DATABASE_URL`; si falta alguna, la aplicación no inicia en lugar de usar valores por defecto inseguros. |
 | **Inicialización de BD al arrancar (`wsgi.py`)** | Los planes gratuitos de Render no dan acceso a Shell; así el despliegue deja la base lista sin pasos manuales. La inicialización es idempotente. |
-| **Administrador inicial condicionado** | El usuario `admin` solo se crea si no existe ningún administrador, y en producción su contraseña sale de una variable de entorno, no del código. |
+| **Administrador inicial condicionado** | La cuenta `superadmin` solo se crea si no existe, siempre está protegida y en producción su contraseña sale de una variable de entorno, no del código. |
+| **Demo reiniciable** | Las cuentas de prueba son públicas; si alguien rompe los datos, `superadmin` reinicia la demo desde *Usuarios → Reiniciar demo* (o `flask reset-demo`). Su propia cuenta se conserva. |
 | **Usuarios protegidos por configuración** | `PROTECTED_USERNAMES` define cuentas intocables sin añadir columnas al modelo ni migraciones; la validación vive en el backend y la interfaz solo oculta los botones. |
 | **Documentos fuera de `static`** | Los archivos se guardan en `instance/uploads` y solo se sirven mediante una vista que verifica visibilidad y departamento. |
 | **SQLite en desarrollo, SQL Server (Azure SQL) en producción** | Arranque local sin instalar nada y un motor administrado en producción; el ORM mantiene el código independiente del motor. |
@@ -295,13 +296,13 @@ pip install -r requirements.txt
 
 cp .env.example .env            # define SECRET_KEY
 
-flask --app run.py seed-db      # crea tablas, roles, permisos, departamentos y usuario admin
+flask --app run.py seed-db      # crea tablas, catálogos, superadmin y datos demo
 python run.py
 ```
 
 La aplicación queda disponible en `http://localhost:5000`.
 
-**Usuario administrador inicial**: `seed-db` crea el usuario `admin` solo si todavía no existe ningún usuario con rol Administrador. En desarrollo, la contraseña por defecto es `Admin123!` (solo para entorno local).
+**Usuario administrador inicial**: `seed-db` crea el usuario `superadmin` solo si todavía no existe. En desarrollo, la contraseña por defecto es `Admin123!` (solo para entorno local).
 
 > Cambia esta contraseña inmediatamente después del primer inicio de sesión, desde `Mi cuenta → Cambiar contraseña`.
 
@@ -312,8 +313,8 @@ La aplicación queda disponible en `http://localhost:5000`.
 | `FLASK_ENV` | Sí | `development` o `production` |
 | `SECRET_KEY` | Sí en producción | Clave para firmar sesiones y formularios. Generar con `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `DATABASE_URL` | Sí en producción | Cadena de conexión SQLAlchemy a SQL Server, por ejemplo `mssql+pymssql://usuario:clave@servidor.database.windows.net:1433/base`. La contraseña debe ir codificada para URL. En desarrollo se usa SQLite si no se define |
-| `ADMIN_INITIAL_PASSWORD` | Solo en producción, si aún no existe ningún administrador | Contraseña del administrador inicial. Sin ella, en producción no se crea ningún usuario inicial |
-| `PROTECTED_USERNAMES` | No | Usuarios (separados por coma) protegidos: solo ellos mismos pueden editarse, y nadie puede eliminarlos, renombrarlos, desactivarlos ni cambiarles el rol |
+| `ADMIN_INITIAL_PASSWORD` | Solo en producción, si aún no existe `superadmin` | Contraseña de `superadmin`. Sin ella, en producción no se crea. Puede borrarse una vez creada la cuenta |
+| `PROTECTED_USERNAMES` | No | Usuarios (separados por coma) protegidos además de `superadmin`, que siempre lo está. Solo ellos pueden reiniciar la demo: solo ellos mismos pueden editarse, y nadie puede eliminarlos, renombrarlos, desactivarlos ni cambiarles el rol |
 
 En producción, la aplicación no arranca si falta `SECRET_KEY` o `DATABASE_URL`.
 
@@ -332,7 +333,10 @@ En producción, la aplicación no arranca si falta `SECRET_KEY` o `DATABASE_URL`
 | Compra de material | Administración |
 | Constancia laboral | Recursos Humanos |
 
-- **Usuario `admin`:** solo si no existe ningún administrador (ver [Instalación local](#instalación-local) y [Variables de entorno](#variables-de-entorno)).
+- **Usuario `superadmin`:** solo si no existe (ver [Instalación local](#instalación-local) y [Variables de entorno](#variables-de-entorno)).
+- **Datos demo** (solo en una base vacía): las 3 cuentas de prueba del inicio, 30 empleados, 80 solicitudes con su historial de comentarios y 15 documentos por área. Todos los documentos usan el archivo de ejemplo `app/demo_data/documento_ejemplo.txt`, que se restaura en cada arranque porque el disco de Render es efímero.
+
+Para borrar todo y volver a cargar la demo: botón **Reiniciar demo** en *Usuarios* (solo cuentas protegidas) o `flask --app run.py reset-demo`. ⚠️ El comando actúa sobre la base de `DATABASE_URL`.
 
 ## Despliegue en producción
 

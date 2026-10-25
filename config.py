@@ -26,7 +26,7 @@ class Config:
 
     # Usuarios protegidos: solo ellos mismos pueden editarse; nadie puede eliminarlos,
     # renombrarlos, desactivarlos ni cambiarles el rol. Lista separada por comas.
-    PROTECTED_USERNAMES = {
+    PROTECTED_USERNAMES = {"superadmin"} | {
         u.strip() for u in os.environ.get("PROTECTED_USERNAMES", "").split(",") if u.strip()
     }
 
@@ -40,7 +40,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SECRET_KEY = os.environ.get("SECRET_KEY", "clave-solo-para-desarrollo-local")
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "clave-solo-para-desarrollo-local"
 
 
 class ProductionConfig(Config):
