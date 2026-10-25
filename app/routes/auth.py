@@ -57,6 +57,8 @@ def login():
         if not next_page or not next_page.startswith("/") or next_page.startswith("//") or "\\" in next_page:
             next_page = url_for("main.dashboard")
         return redirect(next_page)
+    elif request.method == "POST":
+        flash("Escribe tu usuario y contraseña.", "danger")
 
     return render_template("login.html", form=form)
 
@@ -81,4 +83,6 @@ def change_password():
             db.session.commit()
             flash("Contraseña actualizada correctamente.", "success")
             return redirect(url_for("main.dashboard"))
+    elif request.method == "POST":
+        flash("No se pudo cambiar la contraseña: revisa los campos marcados en rojo.", "danger")
     return render_template("change_password.html", form=form)

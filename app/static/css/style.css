@@ -86,7 +86,21 @@ h3, .h3 { font-size: 1rem; font-weight: 700; color: var(--tinta); }
 .navbar-brand .marca { font-size: 1.15rem; }
 .navbar .nav-link { font-weight: 500; }
 .navbar .nav-link.active { font-weight: 600; box-shadow: inset 0 -2px 0 #fff; }
-.navbar-rol { font-size: 0.8rem; opacity: 0.85; margin-left: 0.25rem; }
+/* Cuenta en escritorio: inicial, nombre y rol en dos líneas */
+.navbar .cuenta { display: flex; align-items: center; gap: 0.6rem; padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.cuenta-inicial {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: #fff;
+  color: var(--tinta);
+  font-weight: 700;
+}
+.cuenta-texto { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
+.cuenta-nombre { color: #fff; font-weight: 600; }
+.cuenta-rol { color: rgba(255, 255, 255, 0.85); font-size: 0.78rem; }
 
 /* Menú lateral en móvil (en lg+ Bootstrap lo muestra como barra normal y transparente) */
 .navbar .offcanvas {

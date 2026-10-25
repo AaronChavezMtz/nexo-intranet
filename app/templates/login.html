@@ -13,13 +13,13 @@
       {{ form.hidden_tag() }}
       <div class="mb-3">
         {{ form.username.label(class="form-label") }}
-        {{ form.username(class="form-control", autocomplete="username", autofocus=true) }}
-        {% for error in form.username.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        {{ form.username(class="form-control" ~ (" is-invalid" if form.username.errors else ""), autocomplete="username", autofocus=true) }}
+        {% for error in form.username.errors %}<div class="visually-hidden">{{ error }}</div>{% endfor %}
       </div>
       <div class="mb-3">
         {{ form.password.label(class="form-label") }}
-        {{ form.password(class="form-control", autocomplete="current-password") }}
-        {% for error in form.password.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        {{ form.password(class="form-control" ~ (" is-invalid" if form.password.errors else ""), autocomplete="current-password") }}
+        {% for error in form.password.errors %}<div class="visually-hidden">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-check mb-3">
         {{ form.remember_me(class="form-check-input") }}

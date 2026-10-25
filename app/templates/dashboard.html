@@ -7,7 +7,6 @@
     <h1>{{ 'Panel de operación' if gestor else 'Hola, ' ~ current_user.full_name.split(' ')[0] }}</h1>
     <p>{{ fecha_hoy|capitalize }}. {{ current_user.role.name }}{% if current_user.department %}, {{ current_user.department.name }}{% endif %}.</p>
   </div>
-  <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva solicitud</a>
 </header>
 
 {% if gestor %}

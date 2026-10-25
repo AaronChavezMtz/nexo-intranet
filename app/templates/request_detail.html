@@ -57,18 +57,6 @@
       <h2 class="card-header h3" id="titulo-actualizar">Actualizar solicitud</h2>
       <div class="card-body">
 
-        {% if update_form.errors %}
-        <div class="alert alert-danger">
-          <b>No se pudo actualizar.</b> Revisa lo siguiente:
-          <ul class="mb-0">
-            {% for field_name, errores in update_form.errors.items() %}
-              {% for error in errores %}
-              <li>{{ update_form[field_name].label.text }}: {{ error }}</li>
-              {% endfor %}
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
 
         <form method="POST" novalidate>
           {{ update_form.hidden_tag() }}

@@ -84,6 +84,8 @@ def new_request():
 
         flash(f"Solicitud {solicitud.folio} creada correctamente.", "success")
         return redirect(url_for("requests.view_request", request_id=solicitud.public_id))
+    elif request.method == "POST":
+        flash("No se pudo enviar: revisa los campos marcados en rojo.", "danger")
 
     return render_template("new_request.html", form=form)
 

@@ -71,6 +71,8 @@ def upload_document():
         db.session.commit()
         flash("Documento subido correctamente.", "success")
         return redirect(url_for("documents.list_documents"))
+    elif request.method == "POST":
+        flash("No se pudo subir el documento: revisa los campos marcados en rojo.", "danger")
 
     return render_template("upload_document.html", form=form)
 

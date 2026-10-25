@@ -60,9 +60,12 @@
         {# Escritorio: menú de cuenta desplegable #}
         <ul class="navbar-nav d-none d-lg-flex">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-person-circle" aria-hidden="true"></i> {{ current_user.full_name }}
-              <span class="navbar-rol d-none d-xl-inline">{{ current_user.role.name }}</span>
+            <a class="nav-link dropdown-toggle cuenta" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="cuenta-inicial" aria-hidden="true">{{ current_user.full_name[:1]|upper }}</span>
+              <span class="cuenta-texto">
+                <span class="cuenta-nombre">{{ current_user.full_name }}</span>
+                <span class="cuenta-rol">{{ current_user.role.name }}</span>
+              </span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">Cambiar contraseña</a></li>
