@@ -2,6 +2,7 @@ import os
 import click
 
 from flask import current_app
+from sqlalchemy import inspect, text
 
 from app import db
 from app.demo import seed_demo, restaurar_archivos_demo
@@ -57,7 +58,7 @@ def _crear_admin_inicial(deptos_obj, log):
     admin = User(
         username=SUPERADMIN,
         full_name="Administrador del Sistema",
-        email="superadmin@nexo-intranet.local",
+        email="superadmin@nexo-intranet.mx",
         role_id=admin_role.id,
         department_id=deptos_obj["Sistemas"].id,
         is_active_user=True,
@@ -67,9 +68,26 @@ def _crear_admin_inicial(deptos_obj, log):
     log("Usuario administrador inicial creado: superadmin")
 
 
+def _agregar_columnas_nuevas(log):
+    """Sin Flask-Migrate, create_all no altera tablas existentes: las columnas
+    añadidas después del primer despliegue se agregan aquí."""
+    inspector = inspect(db.engine)
+    if not inspector.has_table("users"):
+        return  # create_all la creará completa
+    if "must_change_password" not in {c["name"] for c in inspector.get_columns("users")}:
+        # SQL Server usa "ADD" y BIT; SQLite usa "ADD COLUMN" y BOOLEAN.
+        ddl = ("ALTER TABLE users ADD must_change_password BIT NOT NULL DEFAULT 0"
+               if db.engine.dialect.name == "mssql"
+               else "ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0")
+        with db.engine.begin() as conn:
+            conn.execute(text(ddl))
+        log("Columna users.must_change_password agregada.")
+
+
 def _seed_data(log=print, conservados=()):
     """Crea las tablas e inserta datos base y demo. Segura de llamar más de una vez.
     'conservados' son cuentas que reset_demo vuelve a insertar tal como estaban."""
+    _agregar_columnas_nuevas(log)
     db.create_all()
 
     permisos_obj = {}

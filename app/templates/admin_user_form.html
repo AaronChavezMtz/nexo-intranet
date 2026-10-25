@@ -38,11 +38,14 @@
               {{ form.department_id(class="form-select") }}
             </div>
           </div>
+          {% if usuario and usuario.username in USUARIOS_DEMO %}
+          <p class="form-text mb-3"><i class="bi bi-lock" aria-hidden="true"></i> Es una cuenta de demostración pública: su contraseña no se puede cambiar.</p>
+          {% else %}
           <div class="row">
             <div class="col-md-6 mb-3">
               {{ form.password.label(class="form-label") }}
               {{ form.password(class="form-control" ~ (" is-invalid" if form.password.errors else ""), value="") }}
-              <div class="form-text">{{ 'Deja en blanco para no cambiarla.' if modo == 'editar' else 'Mínimo 6 caracteres.' }}</div>
+              <div class="form-text">{{ 'Deja en blanco para no cambiarla. Si la cambias, la persona deberá elegir una nueva al entrar.' if modo == 'editar' else 'Mínimo 6 caracteres. Es temporal: la persona deberá cambiarla en su primer acceso.' }}</div>
               {% for error in form.password.errors %}<div class="visually-hidden">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6 mb-3">
@@ -51,6 +54,7 @@
               {% for error in form.confirm_password.errors %}<div class="visually-hidden">{{ error }}</div>{% endfor %}
             </div>
           </div>
+          {% endif %}
           <div class="form-check mb-3">
             {{ form.is_active_user(class="form-check-input") }}
             {{ form.is_active_user.label(class="form-check-label") }}

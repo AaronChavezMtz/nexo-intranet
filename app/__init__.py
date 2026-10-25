@@ -51,6 +51,8 @@ def create_app(config_class=None):
 
     from app import models  # noqa: F401
     app.jinja_env.globals["ESTADO_COLOR"] = models.ServiceRequest.ESTADO_COLOR
+    from app.demo import USUARIOS_DEMO
+    app.jinja_env.globals["USUARIOS_DEMO"] = USUARIOS_DEMO
 
     @login_manager.user_loader
     def load_user(user_id):

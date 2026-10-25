@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app import db
+from app.demo import USUARIOS_DEMO
 from app.models import User
 from app.forms import LoginForm, ChangePasswordForm
 
@@ -71,15 +72,28 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
+@auth_bp.before_app_request
+def _exigir_cambio_de_password():
+    # Con una contraseña temporal no se puede usar nada más hasta cambiarla.
+    if (current_user.is_authenticated and current_user.must_change_password
+            and request.endpoint not in ("auth.change_password", "auth.logout", "static")):
+        return redirect(url_for("auth.change_password"))
+
+
 @auth_bp.route("/mi-cuenta/cambiar-password", methods=["GET", "POST"])
 @login_required
 def change_password():
+    if current_user.username in USUARIOS_DEMO:
+        flash("Las cuentas de demostración no pueden cambiar su contraseña.", "info")
+        return redirect(url_for("main.dashboard"))
+
     form = ChangePasswordForm()
     if form.validate_on_submit():
         if not current_user.check_password(form.current_password.data):
             flash("La contraseña actual no es correcta.", "danger")
         else:
             current_user.set_password(form.new_password.data)
+            current_user.must_change_password = False
             db.session.commit()
             flash("Contraseña actualizada correctamente.", "success")
             return redirect(url_for("main.dashboard"))

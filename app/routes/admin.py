@@ -9,6 +9,7 @@ from app.models import User, Role, Department, RequestType, Document, ServiceReq
 from app.forms import UserForm, RoleForm, DepartmentForm
 from app.decorators import permission_required
 from app.seed import reset_demo
+from app.demo import USUARIOS_DEMO
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -71,6 +72,7 @@ def new_user():
             role_id=form.role_id.data,
             department_id=form.department_id.data or None,
             is_active_user=form.is_active_user.data,
+            must_change_password=True,  # la contraseña la eligió el administrador
         )
         usuario.set_password(form.password.data)
         db.session.add(usuario)
@@ -131,6 +133,8 @@ def edit_user(user_id):
             form.role_id.data != usuario.role_id or not form.is_active_user.data
         ):
             flash("Debe quedar al menos un administrador activo en el sistema.", "danger")
+        elif form.password.data and usuario.username in USUARIOS_DEMO:
+            flash("Las cuentas de demostración no pueden cambiar su contraseña.", "danger")
         else:
             usuario.username = form.username.data.strip()
             usuario.full_name = form.full_name.data.strip()
@@ -140,6 +144,8 @@ def edit_user(user_id):
             usuario.is_active_user = form.is_active_user.data
             if form.password.data:
                 usuario.set_password(form.password.data)
+                # Si otro la restablece, pasa a ser temporal; si es la propia, no.
+                usuario.must_change_password = usuario.id != current_user.id
 
             db.session.commit()
             flash("Usuario actualizado correctamente.", "success")

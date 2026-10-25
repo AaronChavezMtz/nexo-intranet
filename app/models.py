@@ -67,6 +67,8 @@ class User(UserMixin, db.Model):
     department_id = db.Column(db.Integer, db.ForeignKey("departments.id"), nullable=True)
 
     is_active_user = db.Column("is_active", db.Boolean, default=True, nullable=False)
+    # Contraseña temporal puesta por un administrador: debe cambiarla al entrar.
+    must_change_password = db.Column(db.Boolean, default=False, nullable=False, server_default=db.text("0"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     documents = db.relationship("Document", backref="uploaded_by", lazy=True,

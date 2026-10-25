@@ -68,8 +68,10 @@
               </span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
+              {% if current_user.username not in USUARIOS_DEMO %}
               <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">Cambiar contraseña</a></li>
               <li><hr class="dropdown-divider"></li>
+              {% endif %}
               <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
             </ul>
           </li>
@@ -79,7 +81,9 @@
         <div class="menu-cuenta d-lg-none">
           <p class="menu-cuenta-nombre">{{ current_user.full_name }}<span>{{ current_user.role.name }}</span></p>
           <ul class="navbar-nav">
+            {% if current_user.username not in USUARIOS_DEMO %}
             <li class="nav-item"><a class="nav-link{{ ' active' if ep == 'auth.change_password' }}" href="{{ url_for('auth.change_password') }}"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a></li>
+            {% endif %}
             <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</a></li>
           </ul>
         </div>

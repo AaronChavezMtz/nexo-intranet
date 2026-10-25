@@ -22,6 +22,8 @@ CUENTAS_DEMO = [
     ("supervisorprueba", "Supervisor1234", "Supervisor de Prueba", "Supervisor", "Recursos Humanos"),
     ("ana.garcia", "Empleado1234", "Ana García", "Empleado", "Administración"),
 ]
+# Son públicas: nadie puede cambiarles la contraseña o la demo quedaría bloqueada.
+USUARIOS_DEMO = frozenset(c[0] for c in CUENTAS_DEMO)
 
 TOTAL_EMPLEADOS = 30
 TOTAL_SOLICITUDES = 80
@@ -127,7 +129,7 @@ def seed_demo(log=print):
 
     usuarios = []
     for username, password, nombre, rol, depto in CUENTAS_DEMO:
-        u = User(username=username, email=f"{username}@nexo-intranet.local", full_name=nombre,
+        u = User(username=username, email=f"{username}@nexo-intranet.mx", full_name=nombre,
                  role_id=roles[rol].id, department_id=deptos[depto].id, is_active_user=True,
                  created_at=ahora - timedelta(days=400))
         u.set_password(password)
@@ -144,7 +146,7 @@ def seed_demo(log=print):
             continue
         usados.add(username)
         usuarios.append(User(
-            username=username, email=f"{username}@nexo-intranet.local", full_name=f"{nombre} {apellido}",
+            username=username, email=f"{username}@nexo-intranet.mx", full_name=f"{nombre} {apellido}",
             password_hash=hash_sin_acceso,
             role_id=roles["Supervisor" if generados < 4 else "Empleado"].id,
             department_id=rnd.choice(list(deptos.values())).id,
