@@ -8,6 +8,7 @@
     {% if current_user.username in protegidos %}
     <form action="{{ url_for('admin.reset_demo_view') }}" method="POST"
           onsubmit="return confirmAction(this, '¿Reiniciar la demo? Se BORRARÁN todos los datos y se recargarán los de ejemplo. Tu cuenta se conserva.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-danger"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar demo</button>
     </form>
     {% endif %}
@@ -41,6 +42,7 @@
         {% if u.id != current_user.id and not protegido %}
         <form action="{{ url_for('admin.delete_user', user_id=u.public_id) }}" method="POST" class="d-inline"
       onsubmit="return confirmAction(this, '¿Eliminar a {{ u.full_name }}? Esto también borrará TODOS sus documentos y solicitudes de forma permanente.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
         </form>
         {% endif %}

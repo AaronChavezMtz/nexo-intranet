@@ -27,7 +27,10 @@ def login():
 
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get("next")
-        return redirect(next_page or url_for("main.dashboard"))
+        # Solo rutas internas: evita que un enlace manipulado lleve a otro sitio tras el login.
+        if not next_page or not next_page.startswith("/") or next_page.startswith("//") or "\\" in next_page:
+            next_page = url_for("main.dashboard")
+        return redirect(next_page)
 
     return render_template("login.html", form=form)
 

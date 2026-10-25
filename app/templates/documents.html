@@ -47,6 +47,7 @@
         {% if current_user.has_permission('manage_documents') %}
   <form action="{{ url_for('documents.delete_document', doc_id=doc.public_id) }}" method="POST" class="d-inline"
       onsubmit="return confirmAction(this, '¿Eliminar este documento? Esta acción no se puede deshacer.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
         </form>
         {% endif %}
