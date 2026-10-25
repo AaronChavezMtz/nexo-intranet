@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
   <div class="col-md-7">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="bi bi-plus-circle"></i> Nueva solicitud</div>
+      <h1 class="card-header h3">Nueva solicitud</h1>
       <div class="card-body">
 
         {% if form.errors %}
@@ -25,13 +25,16 @@
           <div class="mb-3">
             {{ form.request_type_id.label(class="form-label") }} <span class="text-danger">*</span>
             {{ form.request_type_id(class="form-select" ~ (" is-invalid" if form.request_type_id.errors else "")) }}
+            <div class="form-text">La recibe el área que atiende ese trámite. Verás el avance en «Tus trámites».</div>
           </div>
           <div class="mb-3">
             {{ form.description.label(class="form-label") }} <span class="text-danger">*</span>
             {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else ""), rows=5, placeholder="Describe con detalle tu solicitud (mínimo 10 caracteres)...") }}
           </div>
-          <a href="{{ url_for('requests.list_requests') }}" class="btn btn-outline-secondary">Cancelar</a>
-          {{ form.submit(class="btn btn-primary") }}
+          <div class="form-acciones">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('requests.list_requests') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
         </form>
       </div>
     </div>

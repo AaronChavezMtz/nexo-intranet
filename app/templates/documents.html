@@ -1,33 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Documentos - Nexo{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h3><i class="bi bi-folder2-open"></i> Documentos</h3>
+<header class="page-head">
+  <div>
+    <h1>Documentos</h1>
+    <p>Políticas, formatos y manuales publicados por cada área.</p>
+  </div>
   {% if current_user.has_permission('upload_documents') %}
-  <a href="{{ url_for('documents.upload_document') }}" class="btn btn-primary">
-    <i class="bi bi-upload"></i> Subir documento
-  </a>
+  <a href="{{ url_for('documents.upload_document') }}" class="btn btn-primary"><i class="bi bi-upload" aria-hidden="true"></i> Subir documento</a>
   {% endif %}
-</div>
+</header>
 
 {% set actual = request.args.get('categoria') %}
-<nav class="mb-3 d-flex flex-wrap gap-1" aria-label="Filtrar por categoría">
-  <a href="{{ url_for('documents.list_documents') }}" class="btn btn-sm {{ 'btn-primary' if not actual else 'btn-outline-secondary' }}"{% if not actual %} aria-current="page"{% endif %}>Todas</a>
+<nav class="filtros" aria-label="Filtrar por categoría">
+  <a href="{{ url_for('documents.list_documents') }}"{% if not actual %} aria-current="page"{% endif %}>Todos</a>
   {% for c in categorias %}
-  <a href="{{ url_for('documents.list_documents', categoria=c) }}" class="btn btn-sm {{ 'btn-primary' if actual == c else 'btn-outline-secondary' }}"{% if actual == c %} aria-current="page"{% endif %}>{{ c }}</a>
+  <a href="{{ url_for('documents.list_documents', categoria=c) }}"{% if actual == c %} aria-current="page"{% endif %}>{{ c }}</a>
   {% endfor %}
 </nav>
 
-<div class="table-responsive">
-<table class="table table-hover align-middle bg-white">
-  <thead class="table-light">
+<div class="table-responsive hoja">
+<table class="table table-hover align-middle">
+  <thead>
     <tr>
-      <th>Título</th>
-      <th>Categoría</th>
-      <th>Departamento</th>
-      <th>Subido por</th>
-      <th>Fecha</th>
-      <th></th>
+      <th scope="col">Documento</th>
+      <th scope="col" class="d-none d-md-table-cell">Categoría</th>
+      <th scope="col" class="d-none d-lg-table-cell">Área</th>
+      <th scope="col" class="d-none d-xl-table-cell">Publicado por</th>
+      <th scope="col" class="d-none d-sm-table-cell">Fecha</th>
+      <th scope="col"><span class="visually-hidden">Acciones</span></th>
     </tr>
   </thead>
   <tbody>
@@ -35,19 +36,20 @@
     <tr>
       <td>
         <div class="fw-semibold">{{ doc.title }}</div>
-        <div class="text-muted small">{{ doc.description or '' }}</div>
+        {% if doc.description %}<div class="text-muted small">{{ doc.description }}</div>{% endif %}
+        {% if not doc.is_public %}<div class="small"><i class="bi bi-lock" aria-hidden="true"></i> Solo para {{ doc.department.name if doc.department else 'su área' }}</div>{% endif %}
       </td>
-      <td><span class="badge bg-secondary">{{ doc.category }}</span></td>
-      <td>{{ doc.department.name if doc.department else '—' }}</td>
-      <td>{{ doc.uploaded_by.full_name }}</td>
-      <td>{{ doc.uploaded_at.strftime('%d/%m/%Y') }}</td>
-      <td class="text-end">
-        <a href="{{ url_for('documents.download_document', doc_id=doc.public_id) }}" class="btn btn-sm btn-outline-primary" aria-label="Descargar {{ doc.title }}" title="Descargar">
-          <i class="bi bi-download" aria-hidden="true"></i>
+      <td class="d-none d-md-table-cell">{{ doc.category }}</td>
+      <td class="d-none d-lg-table-cell">{{ doc.department.name if doc.department else 'General' }}</td>
+      <td class="d-none d-xl-table-cell">{{ doc.uploaded_by.full_name }}</td>
+      <td class="d-none d-sm-table-cell text-nowrap">{{ doc.uploaded_at.strftime('%d/%m/%Y') }}</td>
+      <td class="text-end text-nowrap">
+        <a href="{{ url_for('documents.download_document', doc_id=doc.public_id) }}" class="btn btn-sm btn-outline-primary" aria-label="Descargar {{ doc.title }}">
+          <i class="bi bi-download" aria-hidden="true"></i><span class="d-none d-md-inline"> Descargar</span>
         </a>
         {% if current_user.has_permission('manage_documents') %}
-  <form action="{{ url_for('documents.delete_document', doc_id=doc.public_id) }}" method="POST" class="d-inline"
-      onsubmit="return confirmAction(this, '¿Eliminar este documento? Esta acción no se puede deshacer.');">
+        <form action="{{ url_for('documents.delete_document', doc_id=doc.public_id) }}" method="POST" class="d-inline"
+              onsubmit="return confirmAction(this, '¿Eliminar «{{ doc.title }}»? Esta acción no se puede deshacer.');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-outline-danger" aria-label="Eliminar {{ doc.title }}" title="Eliminar"><i class="bi bi-trash" aria-hidden="true"></i></button>
         </form>
@@ -55,7 +57,9 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-center text-muted py-4">No hay documentos disponibles.</td></tr>
+    <tr><td colspan="6" class="vacio">
+      {% if actual %}No hay documentos en la categoría «{{ actual }}».{% else %}Todavía no hay documentos publicados.{% endif %}
+    </td></tr>
     {% endfor %}
   </tbody>
 </table>

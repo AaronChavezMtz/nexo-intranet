@@ -131,6 +131,8 @@ class ServiceRequest(db.Model):
     __tablename__ = "service_requests"
 
     ESTADOS = ["Pendiente", "En proceso", "Aprobada", "Rechazada", "Cancelada"]
+    ABIERTAS = ["Pendiente", "En proceso"]
+    RESUELTAS = ["Aprobada", "Rechazada"]
     # Sufijo de clase Bootstrap; usar con text-bg-* para que el contraste del texto sea AA.
     ESTADO_COLOR = {"Pendiente": "warning", "En proceso": "info", "Aprobada": "success",
                     "Rechazada": "danger", "Cancelada": "secondary"}

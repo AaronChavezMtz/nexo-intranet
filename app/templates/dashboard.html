@@ -1,80 +1,243 @@
 {% extends "base.html" %}
+{% from "_macros.html" import sello %}
 {% block title %}Inicio - Nexo{% endblock %}
 {% block content %}
-<h1 class="h3 mb-4">Bienvenido, {{ current_user.full_name.split(' ')[0] }}</h1>
-
-{% set iconos = {'Solicitud de vacaciones': 'bi-sun', 'Soporte técnico / TI': 'bi-tools',
-                 'Compra de material': 'bi-cart', 'Constancia laboral': 'bi-file-earmark-text'} %}
-<h2 class="section-title">¿Qué necesitas hoy?</h2>
-<div class="row g-3 mb-4">
-  {% for t in tipos %}
-  <div class="col-6 col-md-3">
-    <a href="{{ url_for('requests.new_request', tipo=t.id) }}" class="quick-action">
-      <i class="bi {{ iconos.get(t.name, 'bi-plus-circle') }}" aria-hidden="true"></i>
-      <span>{{ t.name }}</span>
-    </a>
+<header class="page-head">
+  <div>
+    <h1>{{ 'Panel de operación' if gestor else 'Hola, ' ~ current_user.full_name.split(' ')[0] }}</h1>
+    <p>{{ fecha_hoy|capitalize }}. {{ current_user.role.name }}{% if current_user.department %}, {{ current_user.department.name }}{% endif %}.</p>
   </div>
-  {% endfor %}
+  <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva solicitud</a>
+</header>
+
+{% if gestor %}
+{# ======================= Supervisores y administradores ======================= #}
+<nav class="accesos" aria-label="Accesos rápidos">
+  <a href="{{ url_for('requests.list_requests', asignado='ninguno') }}"><i class="bi bi-inbox" aria-hidden="true"></i> Sin asignar <b>{{ kpis.sin_asignar }}</b></a>
+  <a href="{{ url_for('requests.list_requests', asignado='yo') }}"><i class="bi bi-person-check" aria-hidden="true"></i> Asignadas a mí <b>{{ kpis.asignadas }}</b></a>
+  <a href="{{ url_for('requests.list_requests') }}"><i class="bi bi-list-ul" aria-hidden="true"></i> Todas las solicitudes</a>
+  {% if current_user.has_permission('upload_documents') %}
+  <a href="{{ url_for('documents.upload_document') }}"><i class="bi bi-upload" aria-hidden="true"></i> Subir documento</a>
+  {% endif %}
+  {% if current_user.has_permission('manage_users') %}
+  <a href="{{ url_for('admin.list_users') }}"><i class="bi bi-people" aria-hidden="true"></i> Usuarios</a>
+  <a href="{{ url_for('admin.new_user') }}"><i class="bi bi-person-plus" aria-hidden="true"></i> Alta de usuario</a>
+  {% endif %}
+  {% if current_user.has_permission('manage_roles') %}
+  <a href="{{ url_for('admin.list_departments') }}"><i class="bi bi-diagram-3" aria-hidden="true"></i> Departamentos</a>
+  {% endif %}
+</nav>
+
+<div class="indicadores">
+  <div class="indicador">
+    <span class="indicador-etq">Abiertas</span>
+    <span class="indicador-num">{{ kpis.abiertas }}</span>
+    <span class="indicador-nota">Pendientes y en proceso</span>
+  </div>
+  <a class="indicador" href="{{ url_for('requests.list_requests', asignado='ninguno') }}">
+    <span class="indicador-etq">Sin asignar</span>
+    <span class="indicador-num">{{ kpis.sin_asignar }}</span>
+    <span class="indicador-nota">Abiertas sin responsable</span>
+  </a>
+  <div class="indicador">
+    <span class="indicador-etq">Resueltas</span>
+    <span class="indicador-num">{{ kpis.resueltas_30 }}</span>
+    <span class="indicador-nota">Aprobadas o rechazadas, últimos 30 días</span>
+  </div>
+  <div class="indicador">
+    <span class="indicador-etq">Tiempo medio de resolución</span>
+    <span class="indicador-num">{{ '%.1f'|format(kpis.dias_promedio) if kpis.dias_promedio is not none else 'Sin datos' }}{% if kpis.dias_promedio is not none %}<small> días</small>{% endif %}</span>
+    <span class="indicador-nota">Desde que se crea hasta que se resuelve</span>
+  </div>
 </div>
 
-<h2 class="section-title">{{ 'Solicitudes de la empresa' if gestor else 'Mis solicitudes' }}</h2>
-<div class="row g-3 mb-4">
-  {% for estado, etiqueta, icono, fondo, color in [
-       ('Pendiente', 'Pendientes', 'bi-hourglass-split', '#fef3e2', '#b45309'),
-       ('En proceso', 'En proceso', 'bi-arrow-repeat', '#e0f2fe', '#0369a1'),
-       ('Aprobada', 'Aprobadas', 'bi-check-circle', '#dcfce7', '#15803d')] %}
-  <div class="col-12 col-sm-4">
-    <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="kpi-card kpi-link">
-      <div class="kpi-icon" style="background-color: {{ fondo }}; color: {{ color }};" aria-hidden="true"><i class="bi {{ icono }}"></i></div>
-      <div>
-        <div class="kpi-value">{{ conteos[estado] }}</div>
-        <div class="kpi-label">{{ etiqueta }}</div>
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <section class="card h-100" aria-labelledby="titulo-volumen">
+      <h2 class="card-header h3" id="titulo-volumen">Solicitudes recibidas por semana</h2>
+      <div class="card-body">
+        {% set maximo = semanas|map(attribute='total')|max %}
+        {% set techo = ((maximo + 4) // 5 * 5) if maximo else 5 %}
+        {% set ancho, alto, izq, arr, aba = 640, 230, 34, 22, 30 %}
+        {% set paso = (ancho - izq - 6) / semanas|length %}
+        {% set altura_util = alto - arr - aba %}
+        <svg class="grafica" viewBox="0 0 {{ ancho }} {{ alto }}" role="img" aria-labelledby="titulo-volumen">
+          {% for v in [0, techo // 2, techo] %}
+          {% set y = arr + altura_util - v / techo * altura_util %}
+          <line class="grafica-rejilla" x1="{{ izq }}" x2="{{ ancho - 6 }}" y1="{{ y }}" y2="{{ y }}"/>
+          <text class="grafica-eje" x="{{ izq - 8 }}" y="{{ y + 4 }}" text-anchor="end">{{ v }}</text>
+          {% endfor %}
+          {% for s in semanas %}
+          {% set x = izq + loop.index0 * paso %}
+          {% set h = s.total / techo * altura_util %}
+          <g class="grafica-columna{{ ' grafica-columna--actual' if loop.last }}">
+            <title>Semana del {{ s.inicio.strftime('%d/%m') }}: {{ s.total }} {{ 'solicitud' if s.total == 1 else 'solicitudes' }}</title>
+            <rect class="grafica-zona" x="{{ x }}" y="{{ arr }}" width="{{ paso }}" height="{{ altura_util }}"/>
+            {% if s.total %}<rect class="grafica-barra" x="{{ x + paso * 0.2 }}" y="{{ arr + altura_util - h }}" width="{{ paso * 0.6 }}" height="{{ h }}" rx="3"/>{% endif %}
+            {% if loop.last %}<text class="grafica-valor" x="{{ x + paso / 2 }}" y="{{ arr + altura_util - h - 6 }}" text-anchor="middle">{{ s.total }}</text>{% endif %}
+            {# Una etiqueta cada dos semanas contando desde la actual, para que no se encimen. #}
+            {% if loop.revindex0 is even %}
+            <text class="grafica-eje" x="{{ x + paso if loop.last else x + paso / 2 }}" y="{{ alto - 10 }}" text-anchor="{{ 'end' if loop.last else 'middle' }}">{{ 'Esta semana' if loop.last else s.inicio.strftime('%d/%m') }}</text>
+            {% endif %}
+          </g>
+          {% endfor %}
+          <line class="grafica-base" x1="{{ izq }}" x2="{{ ancho - 6 }}" y1="{{ arr + altura_util }}" y2="{{ arr + altura_util }}"/>
+        </svg>
+        <details class="grafica-tabla">
+          <summary>Ver como tabla</summary>
+          <table class="table table-sm mt-2">
+            <thead><tr><th scope="col">Semana del</th><th scope="col">Solicitudes</th></tr></thead>
+            <tbody>{% for s in semanas %}<tr><td>{{ s.inicio.strftime('%d/%m/%Y') }}</td><td>{{ s.total }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
       </div>
-    </a>
+    </section>
   </div>
-  {% endfor %}
+
+  <div class="col-lg-4">
+    <section class="card h-100" aria-labelledby="titulo-estados">
+      <h2 class="card-header h3" id="titulo-estados">Por estado</h2>
+      <div class="card-body">
+        {% set maximo_estado = por_estado|map(attribute=1)|max or 1 %}
+        <ul class="barras">
+          {% for estado, total in por_estado %}
+          <li>
+            <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="barras-etq">{{ estado }}</a>
+            <span class="barras-pista" aria-hidden="true"><span class="barras-valor" style="width: {{ (total / maximo_estado * 100)|round(1) }}%"></span></span>
+            <span class="barras-num">{{ total }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </div>
 </div>
 
 <div class="row g-4">
-  <div class="{{ 'col-md-6' if gestor else 'col-12' }}">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-card-checklist" aria-hidden="true"></i> Mis últimas solicitudes</span>
-        <a href="{{ url_for('requests.list_requests') }}" class="small">Ver todas</a>
-      </div>
-      <ul class="list-group list-group-flush">
-        {% for s in mis_solicitudes %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-decoration-none">
-            {{ s.folio }} - {{ s.request_type.name }}
-          </a>
-          <span class="badge text-bg-{{ ESTADO_COLOR[s.status] }}">{{ s.status }}</span>
-        </li>
+  <div class="col-lg-4">
+    <section class="card h-100" aria-labelledby="titulo-areas">
+      <h2 class="card-header h3" id="titulo-areas">Abiertas por área</h2>
+      <div class="card-body">
+        {% if por_area %}
+        {% set maximo_area = por_area|map(attribute=1)|max %}
+        <ul class="barras">
+          {% for area, total in por_area %}
+          <li>
+            <span class="barras-etq">{{ area }}</span>
+            <span class="barras-pista" aria-hidden="true"><span class="barras-valor" style="width: {{ (total / maximo_area * 100)|round(1) }}%"></span></span>
+            <span class="barras-num">{{ total }}</span>
+          </li>
+          {% endfor %}
+        </ul>
         {% else %}
-        <li class="list-group-item text-muted">Aún no has creado ninguna solicitud. Elige un trámite arriba para empezar.</li>
-        {% endfor %}
-      </ul>
-    </div>
+        <p class="text-muted m-0">No hay solicitudes abiertas.</p>
+        {% endif %}
+      </div>
+    </section>
   </div>
 
-  {% if gestor %}
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header"><i class="bi bi-person-check" aria-hidden="true"></i> Asignadas a mí</div>
-      <ul class="list-group list-group-flush">
-        {% for s in asignadas_a_mi %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-decoration-none">
-            {{ s.folio }} - {{ s.requester.full_name }}
+  <div class="col-lg-8">
+    <section class="card h-100" aria-labelledby="titulo-atencion">
+      <div class="card-header d-flex justify-content-between align-items-baseline">
+        <h2 class="h3 m-0" id="titulo-atencion">Requieren atención</h2>
+        <a href="{{ url_for('requests.list_requests', asignado='ninguno') }}" class="small fw-normal">Ver todas sin asignar</a>
+      </div>
+      {% if atencion %}
+      <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col">Folio</th><th scope="col">Trámite</th><th scope="col" class="d-none d-md-table-cell">Solicitante</th><th scope="col">Antigüedad</th></tr>
+        </thead>
+        <tbody>
+          {% for s in atencion %}
+          {% set dias = (hoy - s.created_at).days %}
+          <tr>
+            <td><a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="folio">{{ s.folio }}</a></td>
+            <td>{{ s.request_type.name }}</td>
+            <td class="d-none d-md-table-cell">{{ s.requester.full_name }}</td>
+            <td class="text-nowrap{{ ' text-danger fw-semibold' if dias > 30 }}">{{ 'Hoy' if dias == 0 else dias ~ (' día' if dias == 1 else ' días') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <p class="card-body text-muted m-0">Todas las solicitudes abiertas tienen responsable.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+{% else %}
+{# =============================== Empleados =============================== #}
+{% set iconos = {'Solicitud de vacaciones': 'bi-sun', 'Soporte técnico / TI': 'bi-tools',
+                 'Compra de material': 'bi-cart', 'Constancia laboral': 'bi-file-earmark-text'} %}
+<div class="ventanilla">
+  <div>
+    <section aria-labelledby="titulo-tramites" class="mb-4">
+      <h2 id="titulo-tramites">Iniciar un trámite</h2>
+      <ul class="tramites hoja">
+        {% for t in tipos %}
+        <li>
+          <a href="{{ url_for('requests.new_request', tipo=t.id) }}">
+            <i class="bi {{ iconos.get(t.name, 'bi-plus-circle') }}" aria-hidden="true"></i>
+            <span>
+              <strong>{{ t.name }}</strong>
+              {% if t.department %}<small>Lo atiende {{ t.department.name }}</small>{% endif %}
+            </span>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </a>
-          <span class="badge text-bg-{{ ESTADO_COLOR[s.status] }}">{{ s.status }}</span>
         </li>
-        {% else %}
-        <li class="list-group-item text-muted">No tienes solicitudes asignadas pendientes.</li>
         {% endfor %}
       </ul>
-    </div>
+    </section>
+
+    <section aria-labelledby="titulo-docs">
+      <h2 id="titulo-docs">Documentos recientes</h2>
+      <ul class="tramites hoja">
+        {% for d in documentos %}
+        <li>
+          <a href="{{ url_for('documents.download_document', doc_id=d.public_id) }}" aria-label="Descargar {{ d.title }}">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+            <span>
+              <strong>{{ d.title }}</strong>
+              <small>{{ d.department.name if d.department else 'General' }}, {{ d.uploaded_at.strftime('%d/%m/%Y') }}</small>
+            </span>
+            <i class="bi bi-download" aria-hidden="true"></i>
+          </a>
+        </li>
+        {% else %}
+        <li class="vacio">Aún no hay documentos publicados para tu área.</li>
+        {% endfor %}
+      </ul>
+      <a class="ver-todo" href="{{ url_for('documents.list_documents') }}">Ver todos los documentos</a>
+    </section>
   </div>
-  {% endif %}
+
+  <section aria-labelledby="titulo-mis">
+    <h2 id="titulo-mis">Tus trámites</h2>
+    <nav class="resumen" aria-label="Resumen por estado">
+      {% for estado, etiqueta in [('Pendiente', 'pendientes'), ('En proceso', 'en proceso'), ('Aprobada', 'aprobadas')] %}
+      <a href="{{ url_for('requests.list_requests', estado=estado) }}"><b>{{ conteos[estado] }}</b>{{ etiqueta }}</a>
+      {% endfor %}
+    </nav>
+    <ul class="oficios">
+      {% for s in mis_solicitudes %}
+      <li>
+        <a class="oficio" href="{{ url_for('requests.view_request', request_id=s.public_id) }}">
+          <span>
+            <span class="folio">{{ s.folio }}</span>
+            <span class="oficio-detalle">{{ s.request_type.name }}. {{ s.created_at.strftime('%d/%m/%Y') }}</span>
+          </span>
+          {{ sello(s.status) }}
+        </a>
+      </li>
+      {% else %}
+      <li class="hoja vacio">Aún no tienes trámites. Elige uno de la lista para empezar.</li>
+      {% endfor %}
+    </ul>
+    <a class="ver-todo" href="{{ url_for('requests.list_requests') }}">Ver todos tus trámites</a>
+  </section>
 </div>
+{% endif %}
 {% endblock %}

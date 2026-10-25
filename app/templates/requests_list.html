@@ -1,43 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Solicitudes{% endblock %}
+{% from "_macros.html" import sello %}
+{% block title %}Solicitudes - Nexo{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h3><i class="bi bi-card-checklist"></i> Solicitudes</h3>
-  <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nueva solicitud</a>
-</div>
+{% set gestor = current_user.has_permission('manage_requests') %}
+<header class="page-head">
+  <div>
+    <h1>{{ 'Solicitudes' if gestor else 'Tus trámites' }}</h1>
+    <p>{{ 'Todas las solicitudes de la empresa, de la más reciente a la más antigua.' if gestor else 'Cada trámite que has iniciado y en qué estado está.' }}</p>
+  </div>
+  <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva solicitud</a>
+</header>
 
 {% set actual = request.args.get('estado') %}
-<nav class="mb-3 d-flex flex-wrap gap-1" aria-label="Filtrar por estado">
-  <a href="{{ url_for('requests.list_requests') }}" class="btn btn-sm {{ 'btn-primary' if not actual else 'btn-outline-secondary' }}"{% if not actual %} aria-current="page"{% endif %}>Todas</a>
+{% set asignado = request.args.get('asignado') %}
+<nav class="filtros" aria-label="Filtrar solicitudes">
+  <a href="{{ url_for('requests.list_requests') }}"{% if not actual and not asignado %} aria-current="page"{% endif %}>Todas</a>
+  {% if gestor %}
+  <a href="{{ url_for('requests.list_requests', asignado='ninguno') }}"{% if asignado == 'ninguno' %} aria-current="page"{% endif %}>Sin asignar</a>
+  <a href="{{ url_for('requests.list_requests', asignado='yo') }}"{% if asignado == 'yo' %} aria-current="page"{% endif %}>Asignadas a mí</a>
+  {% endif %}
   {% for estado in ESTADO_COLOR %}
-  <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="btn btn-sm {{ 'btn-primary' if actual == estado else 'btn-outline-secondary' }}"{% if actual == estado %} aria-current="page"{% endif %}>{{ estado }}</a>
+  <a href="{{ url_for('requests.list_requests', estado=estado) }}"{% if actual == estado %} aria-current="page"{% endif %}>{{ estado }}</a>
   {% endfor %}
 </nav>
 
-<div class="table-responsive">
-<table class="table table-hover bg-white align-middle">
-  <thead class="table-light">
+<div class="table-responsive hoja">
+<table class="table table-hover align-middle">
+  <thead>
     <tr>
-      <th>Folio</th>
-      <th>Tipo</th>
-      {% if current_user.has_permission('manage_requests') %}<th>Solicitante</th>{% endif %}
-      <th>Estado</th>
-      <th>Asignado a</th>
-      <th>Fecha</th>
+      <th scope="col">Folio</th>
+      <th scope="col">Trámite</th>
+      {% if gestor %}<th scope="col" class="d-none d-md-table-cell">Solicitante</th>{% endif %}
+      <th scope="col">Estado</th>
+      <th scope="col" class="d-none d-lg-table-cell">Lo atiende</th>
+      <th scope="col" class="d-none d-sm-table-cell">Fecha</th>
     </tr>
   </thead>
   <tbody>
     {% for s in solicitudes %}
     <tr style="cursor:pointer" onclick="window.location='{{ url_for('requests.view_request', request_id=s.public_id) }}'">
-      <td class="fw-semibold"><a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-reset">{{ s.folio }}</a></td>
+      <td><a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="folio">{{ s.folio }}</a></td>
       <td>{{ s.request_type.name }}</td>
-      {% if current_user.has_permission('manage_requests') %}<td>{{ s.requester.full_name }}</td>{% endif %}
-      <td><span class="badge text-bg-{{ ESTADO_COLOR[s.status] }}">{{ s.status }}</span></td>
-      <td>{{ s.assigned_to.full_name if s.assigned_to else '—' }}</td>
-      <td>{{ s.created_at.strftime('%d/%m/%Y') }}</td>
+      {% if gestor %}<td class="d-none d-md-table-cell">{{ s.requester.full_name }}</td>{% endif %}
+      <td>{{ sello(s.status) }}</td>
+      <td class="d-none d-lg-table-cell">{{ s.assigned_to.full_name if s.assigned_to else 'Sin asignar' }}</td>
+      <td class="d-none d-sm-table-cell text-nowrap">{{ s.created_at.strftime('%d/%m/%Y') }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-center text-muted py-4">No hay solicitudes registradas.</td></tr>
+    <tr><td colspan="6" class="vacio">
+      {% if asignado == 'ninguno' %}Todas las solicitudes abiertas tienen responsable.{% elif asignado == 'yo' %}No tienes solicitudes abiertas asignadas.{% elif actual %}No hay solicitudes con estado «{{ actual }}».{% else %}Aún no hay solicitudes. Usa «Nueva solicitud» para iniciar un trámite.{% endif %}
+    </td></tr>
     {% endfor %}
   </tbody>
 </table>

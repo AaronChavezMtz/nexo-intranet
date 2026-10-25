@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
   <div class="col-md-7">
     <div class="card shadow-sm">
-      <div class="card-header">{{ 'Editar usuario' if modo == 'editar' else 'Nuevo usuario' }}</div>
+      <h1 class="card-header h3">{{ 'Editar usuario' if modo == 'editar' else 'Nuevo usuario' }}</h1>
       <div class="card-body">
         <form method="POST" novalidate autocomplete="off">
           {{ form.hidden_tag() }}
@@ -67,8 +67,10 @@
             {{ form.is_active_user(class="form-check-input") }}
             {{ form.is_active_user.label(class="form-check-label") }}
           </div>
-          <a href="{{ url_for('admin.list_users') }}" class="btn btn-outline-secondary">Cancelar</a>
-          {{ form.submit(class="btn btn-primary") }}
+          <div class="form-acciones">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('admin.list_users') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
         </form>
       </div>
     </div>

@@ -27,6 +27,12 @@ def list_requests():
     estado = request.args.get("estado")
     if estado:
         query = query.filter_by(status=estado)
+    # Vistas de bandeja usadas por los accesos rápidos del panel de operación.
+    asignado = request.args.get("asignado")
+    if asignado in ("ninguno", "yo"):
+        query = query.filter(ServiceRequest.status.in_(ServiceRequest.ABIERTAS)).filter(
+            ServiceRequest.assigned_to_id.is_(None) if asignado == "ninguno"
+            else ServiceRequest.assigned_to_id == current_user.id)
     solicitudes = query.order_by(ServiceRequest.created_at.desc()).all()
 
     return render_template("requests_list.html", solicitudes=solicitudes)

@@ -1,0 +1,4 @@
+{# Estado de una solicitud como sello de tinta; el color sale de ServiceRequest.ESTADO_COLOR. #}
+{% macro sello(estado, grande=false) -%}
+<span class="sello sello--{{ ESTADO_COLOR[estado] }}{{ ' sello--grande' if grande }}">{{ estado }}</span>
+{%- endmacro %}

@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
   <div class="col-md-7">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="bi bi-upload"></i> Subir nuevo documento</div>
+      <h1 class="card-header h3">Subir documento</h1>
       <div class="card-body">
 
         {% if form.errors %}
@@ -43,13 +43,16 @@
           <div class="mb-3">
             {{ form.file.label(class="form-label") }} <span class="text-danger">*</span>
             {{ form.file(class="form-control" ~ (" is-invalid" if form.file.errors else "")) }}
+            <div class="form-text">PDF, Word, Excel, PowerPoint, imagen, TXT o CSV. Máximo 15 MB.</div>
           </div>
           <div class="form-check mb-3">
             {{ form.is_public(class="form-check-input") }}
             {{ form.is_public.label(class="form-check-label") }}
           </div>
-          <a href="{{ url_for('documents.list_documents') }}" class="btn btn-outline-secondary">Cancelar</a>
-          {{ form.submit(class="btn btn-primary") }}
+          <div class="form-acciones">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('documents.list_documents') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
         </form>
       </div>
     </div>

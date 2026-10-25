@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
   <div class="col-md-6">
     <div class="card shadow-sm">
-      <div class="card-header">Editar departamento</div>
+      <h1 class="card-header h3">Editar departamento</h1>
       <div class="card-body">
         <form method="POST" novalidate>
           {{ form.hidden_tag() }}
@@ -18,8 +18,10 @@
             {{ form.description(class="form-control" ~ (" is-invalid" if form.description.errors else "")) }}
             {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
           </div>
-          <a href="{{ url_for('admin.list_departments') }}" class="btn btn-outline-secondary">Cancelar</a>
-          {{ form.submit(class="btn btn-primary") }}
+          <div class="form-acciones">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('admin.list_departments') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
         </form>
       </div>
     </div>

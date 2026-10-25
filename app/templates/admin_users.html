@@ -1,47 +1,57 @@
 {% extends "base.html" %}
-{% block title %}Usuarios{% endblock %}
+{% block title %}Usuarios - Nexo{% endblock %}
 {% block content %}
 {% set protegidos = config.get('PROTECTED_USERNAMES', []) %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3><i class="bi bi-people"></i> Usuarios</h3>
-  <div class="d-flex gap-2">
+<header class="page-head">
+  <div>
+    <h1>Usuarios</h1>
+    <p>{{ usuarios|length }} cuentas. Las cuentas protegidas solo pueden editarse a sí mismas.</p>
+  </div>
+  <div class="page-head-acciones">
     {% if current_user.username in protegidos %}
     <form action="{{ url_for('admin.reset_demo_view') }}" method="POST"
           onsubmit="return confirmAction(this, '¿Reiniciar la demo? Se BORRARÁN todos los datos y se recargarán los de ejemplo. Tu cuenta se conserva.');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-outline-danger"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar demo</button>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reiniciar demo</button>
     </form>
     {% endif %}
-    <a href="{{ url_for('admin.new_user') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo usuario</a>
+    <a href="{{ url_for('admin.new_user') }}" class="btn btn-primary"><i class="bi bi-person-plus" aria-hidden="true"></i> Nuevo usuario</a>
   </div>
-</div>
-<div class="table-responsive">
-<table class="table table-hover bg-white align-middle">
-  <thead class="table-light">
-    <tr><th>Nombre</th><th>Usuario</th><th>Correo</th><th>Rol</th><th>Departamento</th><th>Estado</th><th></th></tr>
+</header>
+
+<div class="table-responsive hoja">
+<table class="table table-hover align-middle">
+  <thead>
+    <tr>
+      <th scope="col">Nombre</th>
+      <th scope="col" class="d-none d-lg-table-cell">Correo</th>
+      <th scope="col">Rol</th>
+      <th scope="col" class="d-none d-md-table-cell">Área</th>
+      <th scope="col" class="d-none d-sm-table-cell">Estado</th>
+      <th scope="col"><span class="visually-hidden">Acciones</span></th>
+    </tr>
   </thead>
   <tbody>
     {% for u in usuarios %}
     {% set protegido = u.username in protegidos %}
     <tr>
-      <td>{{ u.full_name }}</td>
-      <td>{{ u.username }}</td>
-      <td>{{ u.email }}</td>
-      <td><span class="badge bg-primary">{{ u.role.name }}</span></td>
-      <td>{{ u.department.name if u.department else '—' }}</td>
       <td>
-        {% if u.is_active_user %}<span class="badge bg-success">Activo</span>
-        {% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}
+        <div class="fw-semibold">{{ u.full_name }}</div>
+        <div class="text-muted small">{{ u.username }}{% if protegido %}, <i class="bi bi-lock-fill" aria-hidden="true"></i> protegida{% endif %}</div>
       </td>
-      <td class="text-end">
-        {% if protegido and u.id != current_user.id %}
-        <span class="text-muted" title="Usuario protegido"><i class="bi bi-lock-fill"></i></span>
-        {% else %}
+      <td class="d-none d-lg-table-cell">{{ u.email }}</td>
+      <td>{{ u.role.name }}</td>
+      <td class="d-none d-md-table-cell">{{ u.department.name if u.department else 'Sin área' }}</td>
+      <td class="d-none d-sm-table-cell text-nowrap">
+        <span class="estado-cuenta{{ '' if u.is_active_user else ' estado-cuenta--inactiva' }}">{{ 'Activa' if u.is_active_user else 'Inactiva' }}</span>
+      </td>
+      <td class="text-end text-nowrap">
+        {% if not protegido or u.id == current_user.id %}
         <a href="{{ url_for('admin.edit_user', user_id=u.public_id) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ u.full_name }}" title="Editar"><i class="bi bi-pencil" aria-hidden="true"></i></a>
         {% endif %}
         {% if u.id != current_user.id and not protegido %}
         <form action="{{ url_for('admin.delete_user', user_id=u.public_id) }}" method="POST" class="d-inline"
-      onsubmit="return confirmAction(this, '¿Eliminar a {{ u.full_name }}? Esto también borrará TODOS sus documentos y solicitudes de forma permanente.');">
+              onsubmit="return confirmAction(this, '¿Eliminar a {{ u.full_name }}? Esto también borrará TODOS sus documentos y solicitudes de forma permanente.');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-outline-danger" aria-label="Eliminar {{ u.full_name }}" title="Eliminar"><i class="bi bi-trash" aria-hidden="true"></i></button>
         </form>
