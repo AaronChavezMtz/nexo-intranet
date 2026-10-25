@@ -2,13 +2,14 @@
    Papel, tinta y sellos de control interno. El estado de un trámite se muestra
    como sello: es el único elemento expresivo; todo lo demás es plano y sobrio. */
 :root {
-  --papel: #f5f7f6;
+  --papel: #eceff0;       /* algo más oscuro para que las hojas blancas resalten */
   --hoja: #ffffff;
   --tinta: #17284a;
   --tinta-oscura: #0f1c36;
   --texto: #1e2633;
   --gris: #556070;        /* texto secundario: AA sobre papel y hoja */
-  --linea: #d8dedb;
+  --linea: #cfd6d3;
+  --sombra-hoja: 0 1px 2px rgba(23, 40, 74, 0.06), 0 2px 8px rgba(23, 40, 74, 0.06);
   --linea-suave: #e8ecea;
   --borde-control: #858f8a; /* 3:1 sobre blanco (WCAG 1.4.11) */
   --resalte: #eef2f0;
@@ -21,7 +22,7 @@
 
   --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --bs-body-color: var(--texto);
-  --bs-body-bg: var(--papel);
+  --bs-body-bg: var(--hoja); /* tarjetas, modales y menús de Bootstrap heredan este fondo; el papel va solo en body */
   --bs-secondary-color: var(--gris);
   --bs-border-color: var(--linea);
   --bs-link-color-rgb: 29, 95, 168;
@@ -86,6 +87,21 @@ h3, .h3 { font-size: 1rem; font-weight: 700; color: var(--tinta); }
 .navbar .nav-link { font-weight: 500; }
 .navbar .nav-link.active { font-weight: 600; box-shadow: inset 0 -2px 0 #fff; }
 .navbar-rol { font-size: 0.8rem; opacity: 0.85; margin-left: 0.25rem; }
+
+/* Menú lateral en móvil (en lg+ Bootstrap lo muestra como barra normal y transparente) */
+.navbar .offcanvas {
+  --bs-offcanvas-width: min(85vw, 300px);
+  --bs-offcanvas-bg: var(--tinta);
+  --bs-offcanvas-color: #fff;
+}
+.navbar .offcanvas-header { border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
+@media (max-width: 991.98px) {
+  .navbar .nav-link { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; padding: 0.5rem 0.75rem; border-radius: var(--radio-control); }
+  .navbar .nav-link.active { box-shadow: none; background-color: rgba(255, 255, 255, 0.14); }
+  .menu-cuenta { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.15); }
+  .menu-cuenta-nombre { margin: 0 0.75rem 0.5rem; font-weight: 600; }
+  .menu-cuenta-nombre span { display: block; font-size: 0.85rem; font-weight: 400; opacity: 0.8; }
+}
 .dropdown-menu { border-color: var(--linea); border-radius: var(--radio); }
 
 /* ---------- Encabezado de página ---------- */
@@ -141,8 +157,11 @@ h3, .h3 { font-size: 1rem; font-weight: 700; color: var(--tinta); }
 .card, .card.shadow-sm {
   border: 1px solid var(--linea);
   border-radius: var(--radio);
-  box-shadow: none !important;
+  box-shadow: var(--sombra-hoja) !important;
 }
+/* Los formularios son la hoja principal de su página: un poco más de presencia. */
+.card:has(form) { border-color: #bfc8c4; }
+.card:has(form) > .card-header { background-color: #f7f9f8; }
 .card-header {
   background-color: transparent;
   border-bottom: 1px solid var(--linea-suave);
@@ -156,6 +175,7 @@ h3, .h3 { font-size: 1rem; font-weight: 700; color: var(--tinta); }
   background-color: var(--hoja);
   border: 1px solid var(--linea);
   border-radius: var(--radio);
+  box-shadow: var(--sombra-hoja);
 }
 
 /* ---------- Formularios ---------- */
@@ -255,6 +275,7 @@ h3, .h3 { font-size: 1rem; font-weight: 700; color: var(--tinta); }
   background-color: var(--hoja);
   border: 1px solid var(--linea);
   border-radius: var(--radio);
+  box-shadow: var(--sombra-hoja);
   color: var(--texto);
   text-decoration: none;
 }
@@ -386,6 +407,7 @@ a.oficio:hover { border-color: var(--tinta); color: var(--texto); }
   background-color: var(--hoja);
   border: 1px solid var(--linea);
   border-radius: var(--radio);
+  box-shadow: var(--sombra-hoja);
 }
 .indicador {
   display: flex;

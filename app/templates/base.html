@@ -30,47 +30,57 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container-fluid">
     <a class="navbar-brand" href="{{ url_for('main.dashboard') }}"><span class="marca">Nexo</span></a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Abrir menú">
+    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#navMenu" aria-controls="navMenu" aria-label="Abrir menú">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navMenu">
-      {% set bp = request.blueprint %}
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link{{ ' active' if bp == 'main' }}" {% if bp == 'main' %}aria-current="page" {% endif %}href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2"></i> Inicio</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link{{ ' active' if bp == 'documents' }}" {% if bp == 'documents' %}aria-current="page" {% endif %}href="{{ url_for('documents.list_documents') }}"><i class="bi bi-folder2-open"></i> Documentos</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link{{ ' active' if bp == 'requests' }}" {% if bp == 'requests' %}aria-current="page" {% endif %}href="{{ url_for('requests.list_requests') }}"><i class="bi bi-card-checklist"></i> Solicitudes</a>
-        </li>
-        {% if current_user.has_permission('manage_users') %}
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle{{ ' active' if bp == 'admin' }}" href="#" role="button" data-bs-toggle="dropdown">
-            <i class="bi bi-gear"></i> Administración
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{{ url_for('admin.list_users') }}">Usuarios</a></li>
-            <li><a class="dropdown-item" href="{{ url_for('admin.list_roles') }}">Roles y permisos</a></li>
-            <li><a class="dropdown-item" href="{{ url_for('admin.list_departments') }}">Departamentos</a></li>
+    {# En pantallas grandes es una barra normal; en móvil, un panel que entra por la derecha. #}
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="navMenu" aria-labelledby="navMenuTitulo">
+      <div class="offcanvas-header">
+        <h2 class="offcanvas-title h5" id="navMenuTitulo">Menú</h2>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar menú"></button>
+      </div>
+      <div class="offcanvas-body">
+        {% set ep = request.endpoint or '' %}
+        {% set enlaces = [
+             ('main.dashboard', 'bi-speedometer2', 'Inicio', ep.startswith('main.'), true),
+             ('documents.list_documents', 'bi-folder2-open', 'Documentos', ep.startswith('documents.'), true),
+             ('requests.list_requests', 'bi-card-checklist', 'Solicitudes', ep.startswith('requests.'), true),
+             ('admin.list_users', 'bi-people', 'Usuarios', ep in ('admin.list_users', 'admin.new_user', 'admin.edit_user'), current_user.has_permission('manage_users')),
+             ('admin.list_roles', 'bi-shield-lock', 'Roles', ep == 'admin.list_roles', current_user.has_permission('manage_roles')),
+             ('admin.list_departments', 'bi-diagram-3', 'Departamentos', ep in ('admin.list_departments', 'admin.edit_department'), current_user.has_permission('manage_roles')),
+           ] %}
+        <ul class="navbar-nav me-auto">
+          {% for destino, icono, texto, activo, visible in enlaces if visible %}
+          <li class="nav-item">
+            <a class="nav-link{{ ' active' if activo }}" {% if activo %}aria-current="page" {% endif %}href="{{ url_for(destino) }}"><i class="bi {{ icono }}" aria-hidden="true"></i> {{ texto }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+
+        {# Escritorio: menú de cuenta desplegable #}
+        <ul class="navbar-nav d-none d-lg-flex">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle" aria-hidden="true"></i> {{ current_user.full_name }}
+              <span class="navbar-rol d-none d-xl-inline">{{ current_user.role.name }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">Cambiar contraseña</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
+            </ul>
+          </li>
+        </ul>
+
+        {# Móvil: la cuenta como opciones del mismo menú #}
+        <div class="menu-cuenta d-lg-none">
+          <p class="menu-cuenta-nombre">{{ current_user.full_name }}<span>{{ current_user.role.name }}</span></p>
+          <ul class="navbar-nav">
+            <li class="nav-item"><a class="nav-link{{ ' active' if ep == 'auth.change_password' }}" href="{{ url_for('auth.change_password') }}"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</a></li>
           </ul>
-        </li>
-        {% endif %}
-      </ul>
-      <ul class="navbar-nav">
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-            <i class="bi bi-person-circle" aria-hidden="true"></i> {{ current_user.full_name }}
-            <span class="navbar-rol">{{ current_user.role.name }}</span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">Cambiar contraseña</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
-          </ul>
-        </li>
-      </ul>
+        </div>
+      </div>
     </div>
   </div>
 </nav>
