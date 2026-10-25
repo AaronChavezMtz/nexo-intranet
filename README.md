@@ -365,6 +365,7 @@ Detalles de la configuración:
 ## Seguridad
 
 - Contraseñas almacenadas como hash con Werkzeug (`scrypt` por defecto), nunca en texto plano.
+- Límite de intentos de inicio de sesión: tras 10 fallos desde la misma IP en 15 minutos, el login se bloquea para esa IP durante ese periodo (contador en memoria, válido con un solo worker).
 - Protección CSRF en los formularios de la aplicación (Flask-WTF), complementada con cookies `SameSite=Lax`.
 - Control de acceso mediante decoradores de permisos (`@permission_required`) y comprobaciones de propiedad o departamento en las vistas que muestran datos individuales (solicitudes y descargas de documentos).
 - Cookies de sesión `HttpOnly`, `SameSite=Lax`, y `Secure` en producción.

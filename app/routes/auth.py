@@ -1,3 +1,5 @@
+import time
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 
@@ -7,6 +9,23 @@ from app.forms import LoginForm, ChangePasswordForm
 
 auth_bp = Blueprint("auth", __name__)
 
+# shortcut: contador en memoria del proceso, válido con un solo worker (Procfile/Render);
+# con varios workers o instancias, pasar a un almacén compartido (p. ej. Flask-Limiter + Redis).
+# Se cuenta por IP y no por usuario para que nadie pueda bloquear la cuenta de otro.
+MAX_INTENTOS = 10
+VENTANA_SEG = 15 * 60
+_intentos_fallidos = {}  # ip -> marcas de tiempo de los fallos recientes
+
+
+def _bloqueado(ip) -> bool:
+    ahora = time.monotonic()
+    recientes = [t for t in _intentos_fallidos.get(ip, []) if ahora - t < VENTANA_SEG]
+    if recientes:
+        _intentos_fallidos[ip] = recientes
+    else:
+        _intentos_fallidos.pop(ip, None)
+    return len(recientes) >= MAX_INTENTOS
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -15,9 +34,15 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
+        ip = request.remote_addr  # IP real del cliente gracias a ProxyFix
+        if _bloqueado(ip):
+            flash("Demasiados intentos fallidos. Espera 15 minutos e inténtalo de nuevo.", "danger")
+            return redirect(url_for("auth.login"))
+
         user = User.query.filter_by(username=form.username.data.strip()).first()
 
         if user is None or not user.check_password(form.password.data):
+            _intentos_fallidos.setdefault(ip, []).append(time.monotonic())
             flash("Usuario o contraseña incorrectos.", "danger")
             return redirect(url_for("auth.login"))
 
@@ -25,6 +50,7 @@ def login():
             flash("Tu cuenta se encuentra desactivada. Contacta al administrador.", "danger")
             return redirect(url_for("auth.login"))
 
+        _intentos_fallidos.pop(ip, None)
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get("next")
         # Solo rutas internas: evita que un enlace manipulado lleve a otro sitio tras el login.
