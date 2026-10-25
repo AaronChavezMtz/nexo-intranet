@@ -2,26 +2,7 @@ import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-
-def _normalize_db_url(url):
-    """Algunos proveedores (Render, Heroku, Railway) entregan 'postgres://',
-    pero SQLAlchemy 2.x requiere el esquema 'postgresql://'."""
-    if url and url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
-    return url
-
-
-def _engine_options(url):
-    opciones = {"pool_pre_ping": True, "pool_recycle": 1800}
-    if url and url.startswith("mssql"):
-        # Azure SQL serverless puede tardar en reanudarse tras pausarse.
-        opciones["connect_args"] = {"login_timeout": 60}
-    return opciones
-
-
 _DEFAULT_DB = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'intranet.db')}"
-_DB_URL = _normalize_db_url(os.environ.get("DATABASE_URL", _DEFAULT_DB))
-_DB_URL_PROD = _normalize_db_url(os.environ.get("DATABASE_URL"))
 
 
 class Config:
@@ -29,9 +10,10 @@ class Config:
 
     SECRET_KEY = os.environ.get("SECRET_KEY")
 
-    SQLALCHEMY_DATABASE_URI = _DB_URL
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or _DEFAULT_DB
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = _engine_options(_DB_URL)
+    # pool_recycle: Azure SQL cierra conexiones inactivas tras ~30 min.
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 1800}
 
     # Fuera de 'static' para que los archivos solo se sirvan a través de la
     # vista de descarga, que verifica permisos y departamento.
@@ -66,8 +48,7 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
     # Sin valor por defecto: en producción la base debe ser explícita.
-    SQLALCHEMY_DATABASE_URI = _DB_URL_PROD
-    SQLALCHEMY_ENGINE_OPTIONS = _engine_options(_DB_URL_PROD)
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
 
     @staticmethod
     def validate():

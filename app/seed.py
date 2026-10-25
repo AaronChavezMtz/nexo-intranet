@@ -1,10 +1,8 @@
 import os
-import uuid
 import click
-from sqlalchemy import inspect, text
 
 from app import db
-from app.models import Role, Permission, Department, RequestType, User, Document, ServiceRequest
+from app.models import Role, Permission, Department, RequestType, User
 
 PERMISSIONS = [
     ("manage_users", "Crear, editar y eliminar usuarios"),
@@ -33,37 +31,6 @@ REQUEST_TYPES = [
     ("Compra de material", "Administración"),
     ("Constancia laboral", "Recursos Humanos"),
 ]
-
-_TABLAS_CON_PUBLIC_ID = ["departments", "users", "documents", "service_requests"]
-_MODELOS_CON_PUBLIC_ID = [Department, User, Document, ServiceRequest]
-
-
-def _ensure_public_id_columns():
-    """Agrega la columna public_id a tablas creadas antes de este cambio.
-    Usa el inspector de SQLAlchemy en vez de 'IF NOT EXISTS' para que funcione
-    igual en SQLite (desarrollo) y PostgreSQL (producción)."""
-    inspector = inspect(db.engine)
-    for tabla in _TABLAS_CON_PUBLIC_ID:
-        if not inspector.has_table(tabla):
-            continue  # la tabla se creará desde cero más abajo, ya con la columna
-        columnas = [c["name"] for c in inspector.get_columns(tabla)]
-        if "public_id" not in columnas:
-            try:
-                db.session.execute(text(f"ALTER TABLE {tabla} ADD COLUMN public_id VARCHAR(36)"))
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
-
-
-def _backfill_public_ids():
-    """Rellena public_id en filas que existían antes de este cambio."""
-    for modelo in _MODELOS_CON_PUBLIC_ID:
-        pendientes = modelo.query.filter(modelo.public_id.is_(None)).all()
-        for fila in pendientes:
-            fila.public_id = uuid.uuid4().hex
-        if pendientes:
-            db.session.commit()
-
 
 def _crear_admin_inicial(deptos_obj, log):
     """Crea el administrador inicial SOLO si no existe ningún usuario con rol
@@ -97,9 +64,7 @@ def _crear_admin_inicial(deptos_obj, log):
 
 def _seed_data(log=print):
     """Crea las tablas e inserta datos base. Segura de llamar más de una vez."""
-    _ensure_public_id_columns()
     db.create_all()
-    _backfill_public_ids()
 
     permisos_obj = {}
     for code, desc in PERMISSIONS:
