@@ -54,10 +54,12 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
   <img src="docs/images/login.png" width="600" alt="Pantalla de inicio de sesión">
 </p>
 
-### Inicio (dashboard)
+### Inicio (panel de operación)
+
+Supervisores y administradores ven un panel de operación con accesos rápidos, indicadores (abiertas, sin asignar, resueltas en 30 días, tiempo medio de resolución), gráficas de volumen semanal, por estado y por área, y las solicitudes que requieren atención. Los empleados ven un inicio centrado en sus trámites y en los documentos recientes de su área.
 
 <p align="center">
-  <img src="docs/images/inicio.png" width="600" alt="Panel de inicio">
+  <img src="docs/images/inicio.png" width="600" alt="Panel de operación">
 </p>
 
 ### Documentos
@@ -91,9 +93,11 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
 - **Solicitudes internas**: los colaboradores generan solicitudes con folio único; los responsables las asignan, actualizan su estado (Pendiente → En proceso → Aprobada/Rechazada/Cancelada) y dejan registro en una bitácora de seguimiento.
 - **Panel de administración**: alta, edición y baja de usuarios, gestión de departamentos y consulta de roles/permisos. Eliminar un usuario borra sus documentos (incluido el archivo físico), sus comentarios y las solicitudes que creó con su bitácora; las solicitudes que tenía asignadas no se borran, quedan sin responsable.
 - **Protección de administradores**: el sistema impide eliminar, degradar o desactivar al último administrador activo, y permite marcar usuarios como protegidos (`PROTECTED_USERNAMES`): solo ellos pueden editar su propia información y ningún otro administrador puede modificarlos ni eliminarlos.
-- **Validación exhaustiva**: todos los formularios validan longitud, formato y campos obligatorios, mostrando errores específicos por campo.
+- **Panel de operación**: accesos rápidos, indicadores y gráficas generadas en el servidor (sin librerías de gráficas), con vista de tabla accesible. Bandejas *Sin asignar* y *Asignadas a mí* en la lista de solicitudes.
+- **Contraseñas temporales**: cuando un administrador crea un usuario o le restablece la contraseña, la persona debe cambiarla en su siguiente acceso antes de usar la intranet.
+- **Validación exhaustiva**: todos los formularios validan longitud, formato y campos obligatorios; al fallar, una notificación lo indica y los campos con error se marcan en rojo (el detalle queda disponible para lectores de pantalla).
 - **Identificadores no secuenciales**: las URLs usan identificadores públicos (UUID) en lugar de IDs autoincrementales, evitando exponer el volumen de registros del sistema.
-- **Interfaz responsiva** con una identidad visual corporativa propia (Bootstrap 5 + tipografía Inter).
+- **Interfaz responsiva y accesible** con identidad visual corporativa propia (Bootstrap 5 + IBM Plex Sans): el estado de cada solicitud se muestra como un sello, contraste WCAG 2.1 AA y, en móvil, menú lateral que se abre desde la derecha.
 
 ## Stack tecnológico
 
@@ -366,7 +370,9 @@ Detalles de la configuración:
 
 - Contraseñas almacenadas como hash con Werkzeug (`scrypt` por defecto), nunca en texto plano.
 - Límite de intentos de inicio de sesión: tras 10 fallos desde la misma IP en 15 minutos, el login se bloquea para esa IP durante ese periodo (contador en memoria, válido con un solo worker).
-- Protección CSRF en los formularios de la aplicación (Flask-WTF), complementada con cookies `SameSite=Lax`.
+- Protección CSRF global (`CSRFProtect`): todo envío POST, incluidas las acciones de eliminar y reiniciar la demo, exige token; complementada con cookies `SameSite=Lax`.
+- Redirección tras el login limitada a rutas internas (sin redirecciones abiertas).
+- Contraseñas temporales: las definidas por un administrador deben cambiarse en el siguiente acceso; las cuentas demo públicas no pueden cambiar su contraseña, para que nadie bloquee la demo.
 - Control de acceso mediante decoradores de permisos (`@permission_required`) y comprobaciones de propiedad o departamento en las vistas que muestran datos individuales (solicitudes y descargas de documentos).
 - Cookies de sesión `HttpOnly`, `SameSite=Lax`, y `Secure` en producción.
 - Identificadores públicos (UUID) en URLs en lugar de IDs autoincrementales.
@@ -382,15 +388,14 @@ Detalles de la configuración:
 - **Archivos subidos en disco local** (`instance/uploads`): en plataformas con sistema de archivos efímero, como el plan gratuito de Render, los documentos se pierden al reiniciar o volver a desplegar. Para producción real se recomienda almacenamiento externo (S3, Cloudinary, Azure Blob Storage o un disco persistente).
 - **Base de datos serverless**: el nivel gratuito de Azure SQL se pausa tras un periodo de inactividad, por lo que el primer acceso posterior puede tardar hasta un minuto en responder.
 - **Firewall de la base de datos**: Render no ofrece IPs de salida fijas en el plan gratuito, por lo que en la demo el servidor SQL admite conexiones desde cualquier IP, protegidas únicamente por credenciales de un usuario con privilegios limitados. En un despliegue real debe restringirse (IPs fijas, red privada o alojar la aplicación dentro de Azure).
-- **Sin migraciones de esquema**: los cambios en los modelos requieren recrear o ajustar la base manualmente hasta incorporar Flask-Migrate.
-- **Acciones de eliminar sin token CSRF**: los botones de eliminar son envíos POST simples; hoy se apoyan en las cookies `SameSite=Lax` y en la confirmación previa. Ver roadmap.
+- **Migraciones de esquema manuales**: sin Flask-Migrate, las columnas nuevas se añaden al arrancar desde `seed.py` (con la sintaxis de SQL Server o SQLite); cambios mayores en los modelos requieren ajustar la base a mano.
+- **Límite de intentos en memoria**: el contador de intentos de login vive en el proceso; con varios workers o instancias habría que moverlo a un almacén compartido.
 - **Folios**: se generan como el siguiente al mayor existente y, ante una colisión por creaciones simultáneas, se reintenta. Una secuencia de base de datos sería más robusta.
 - **Sin pruebas automatizadas** por ahora (ver roadmap).
 
 ## Roadmap
 
 - [ ] Restringir el firewall de la base de datos (IPs fijas o red privada)
-- [ ] Protección CSRF global (`CSRFProtect`) con token también en las acciones de eliminar
 - [ ] Almacenamiento externo de documentos (S3 / Cloudinary / Azure Blob Storage)
 - [ ] Notificaciones por correo al cambiar el estado de una solicitud
 - [ ] Exportación de reportes (PDF/Excel) de solicitudes por periodo
