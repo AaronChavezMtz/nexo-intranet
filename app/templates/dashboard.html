@@ -1,53 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Inicio - Nexo{% endblock %}
 {% block content %}
-<h3 class="mb-4">Bienvenido, {{ current_user.full_name.split(' ')[0] }} </h3>
+<h1 class="h3 mb-4">Bienvenido, {{ current_user.full_name.split(' ')[0] }}</h1>
 
+{% set iconos = {'Solicitud de vacaciones': 'bi-sun', 'Soporte técnico / TI': 'bi-tools',
+                 'Compra de material': 'bi-cart', 'Constancia laboral': 'bi-file-earmark-text'} %}
+<h2 class="section-title">¿Qué necesitas hoy?</h2>
 <div class="row g-3 mb-4">
+  {% for t in tipos %}
   <div class="col-6 col-md-3">
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background-color: #e8eef4; color: #163a5f;"><i class="bi bi-folder2-open"></i></div>
-      <div>
-        <div class="kpi-value">{{ total_documentos }}</div>
-        <div class="kpi-label">Documentos</div>
-      </div>
-    </div>
+    <a href="{{ url_for('requests.new_request', tipo=t.id) }}" class="quick-action">
+      <i class="bi {{ iconos.get(t.name, 'bi-plus-circle') }}" aria-hidden="true"></i>
+      <span>{{ t.name }}</span>
+    </a>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background-color: #fef3e2; color: #b45309;"><i class="bi bi-hourglass-split"></i></div>
+  {% endfor %}
+</div>
+
+<h2 class="section-title">{{ 'Solicitudes de la empresa' if gestor else 'Mis solicitudes' }}</h2>
+<div class="row g-3 mb-4">
+  {% for estado, etiqueta, icono, fondo, color in [
+       ('Pendiente', 'Pendientes', 'bi-hourglass-split', '#fef3e2', '#b45309'),
+       ('En proceso', 'En proceso', 'bi-arrow-repeat', '#e0f2fe', '#0369a1'),
+       ('Aprobada', 'Aprobadas', 'bi-check-circle', '#dcfce7', '#15803d')] %}
+  <div class="col-12 col-sm-4">
+    <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="kpi-card kpi-link">
+      <div class="kpi-icon" style="background-color: {{ fondo }}; color: {{ color }};" aria-hidden="true"><i class="bi {{ icono }}"></i></div>
       <div>
-        <div class="kpi-value">{{ pendientes }}</div>
-        <div class="kpi-label">Pendientes</div>
+        <div class="kpi-value">{{ conteos[estado] }}</div>
+        <div class="kpi-label">{{ etiqueta }}</div>
       </div>
-    </div>
+    </a>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background-color: #e0f2fe; color: #0369a1;"><i class="bi bi-arrow-repeat"></i></div>
-      <div>
-        <div class="kpi-value">{{ en_proceso }}</div>
-        <div class="kpi-label">En proceso</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="kpi-card">
-      <div class="kpi-icon" style="background-color: #f1f5f9; color: #475569;"><i class="bi bi-people"></i></div>
-      <div>
-        <div class="kpi-value">{{ total_usuarios }}</div>
-        <div class="kpi-label">Colaboradores</div>
-      </div>
-    </div>
-  </div>
+  {% endfor %}
 </div>
 
 <div class="row g-4">
-  <div class="col-md-6">
+  <div class="{{ 'col-md-6' if gestor else 'col-12' }}">
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-card-checklist"></i> Mis últimas solicitudes</span>
-        <a href="{{ url_for('requests.new_request') }}" class="btn btn-sm btn-primary">+ Nueva</a>
+        <span><i class="bi bi-card-checklist" aria-hidden="true"></i> Mis últimas solicitudes</span>
+        <a href="{{ url_for('requests.list_requests') }}" class="small">Ver todas</a>
       </div>
       <ul class="list-group list-group-flush">
         {% for s in mis_solicitudes %}
@@ -55,26 +48,26 @@
           <a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-decoration-none">
             {{ s.folio }} - {{ s.request_type.name }}
           </a>
-          <span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info','Aprobada':'success','Rechazada':'danger','Cancelada':'secondary'}[s.status] }}">{{ s.status }}</span>
+          <span class="badge text-bg-{{ ESTADO_COLOR[s.status] }}">{{ s.status }}</span>
         </li>
         {% else %}
-        <li class="list-group-item text-muted">Aún no has creado ninguna solicitud.</li>
+        <li class="list-group-item text-muted">Aún no has creado ninguna solicitud. Elige un trámite arriba para empezar.</li>
         {% endfor %}
       </ul>
     </div>
   </div>
 
-  {% if current_user.has_permission('manage_requests') %}
+  {% if gestor %}
   <div class="col-md-6">
     <div class="card h-100">
-      <div class="card-header"><i class="bi bi-person-check"></i> Asignadas a mí</div>
+      <div class="card-header"><i class="bi bi-person-check" aria-hidden="true"></i> Asignadas a mí</div>
       <ul class="list-group list-group-flush">
         {% for s in asignadas_a_mi %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-decoration-none">
             {{ s.folio }} - {{ s.requester.full_name }}
           </a>
-          <span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info'}[s.status] }}">{{ s.status }}</span>
+          <span class="badge text-bg-{{ ESTADO_COLOR[s.status] }}">{{ s.status }}</span>
         </li>
         {% else %}
         <li class="list-group-item text-muted">No tienes solicitudes asignadas pendientes.</li>

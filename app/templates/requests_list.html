@@ -6,14 +6,13 @@
   <a href="{{ url_for('requests.new_request') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nueva solicitud</a>
 </div>
 
-{% if current_user.has_permission('manage_requests') %}
-<div class="mb-3">
-  <a href="{{ url_for('requests.list_requests') }}" class="btn btn-sm btn-outline-secondary">Todas</a>
-  {% for estado in ['Pendiente', 'En proceso', 'Aprobada', 'Rechazada', 'Cancelada'] %}
-  <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="btn btn-sm btn-outline-secondary">{{ estado }}</a>
+{% set actual = request.args.get('estado') %}
+<nav class="mb-3 d-flex flex-wrap gap-1" aria-label="Filtrar por estado">
+  <a href="{{ url_for('requests.list_requests') }}" class="btn btn-sm {{ 'btn-primary' if not actual else 'btn-outline-secondary' }}"{% if not actual %} aria-current="page"{% endif %}>Todas</a>
+  {% for estado in ESTADO_COLOR %}
+  <a href="{{ url_for('requests.list_requests', estado=estado) }}" class="btn btn-sm {{ 'btn-primary' if actual == estado else 'btn-outline-secondary' }}"{% if actual == estado %} aria-current="page"{% endif %}>{{ estado }}</a>
   {% endfor %}
-</div>
-{% endif %}
+</nav>
 
 <div class="table-responsive">
 <table class="table table-hover bg-white align-middle">
@@ -30,10 +29,10 @@
   <tbody>
     {% for s in solicitudes %}
     <tr style="cursor:pointer" onclick="window.location='{{ url_for('requests.view_request', request_id=s.public_id) }}'">
-      <td class="fw-semibold">{{ s.folio }}</td>
+      <td class="fw-semibold"><a href="{{ url_for('requests.view_request', request_id=s.public_id) }}" class="text-reset">{{ s.folio }}</a></td>
       <td>{{ s.request_type.name }}</td>
       {% if current_user.has_permission('manage_requests') %}<td>{{ s.requester.full_name }}</td>{% endif %}
-      <td><span class="badge bg-{{ {'Pendiente':'warning','En proceso':'info','Aprobada':'success','Rechazada':'danger','Cancelada':'secondary'}[s.status] }}">{{ s.status }}</span></td>
+      <td><span class="badge text-bg-{{ ESTADO_COLOR[s.status] }}">{{ s.status }}</span></td>
       <td>{{ s.assigned_to.full_name if s.assigned_to else '—' }}</td>
       <td>{{ s.created_at.strftime('%d/%m/%Y') }}</td>
     </tr>

@@ -50,6 +50,7 @@ def create_app(config_class=None):
     app.register_blueprint(admin_bp)
 
     from app import models  # noqa: F401
+    app.jinja_env.globals["ESTADO_COLOR"] = models.ServiceRequest.ESTADO_COLOR
 
     @login_manager.user_loader
     def load_user(user_id):

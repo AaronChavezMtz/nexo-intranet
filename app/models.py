@@ -131,6 +131,9 @@ class ServiceRequest(db.Model):
     __tablename__ = "service_requests"
 
     ESTADOS = ["Pendiente", "En proceso", "Aprobada", "Rechazada", "Cancelada"]
+    # Sufijo de clase Bootstrap; usar con text-bg-* para que el contraste del texto sea AA.
+    ESTADO_COLOR = {"Pendiente": "warning", "En proceso": "info", "Aprobada": "success",
+                    "Rechazada": "danger", "Cancelada": "secondary"}
 
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(36), unique=True, index=True, default=lambda: uuid.uuid4().hex)

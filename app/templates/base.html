@@ -36,19 +36,20 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navMenu">
+      {% set bp = request.blueprint %}
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2"></i> Inicio</a>
+          <a class="nav-link{{ ' active' if bp == 'main' }}" {% if bp == 'main' %}aria-current="page" {% endif %}href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2"></i> Inicio</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('documents.list_documents') }}"><i class="bi bi-folder2-open"></i> Documentos</a>
+          <a class="nav-link{{ ' active' if bp == 'documents' }}" {% if bp == 'documents' %}aria-current="page" {% endif %}href="{{ url_for('documents.list_documents') }}"><i class="bi bi-folder2-open"></i> Documentos</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('requests.list_requests') }}"><i class="bi bi-card-checklist"></i> Solicitudes</a>
+          <a class="nav-link{{ ' active' if bp == 'requests' }}" {% if bp == 'requests' %}aria-current="page" {% endif %}href="{{ url_for('requests.list_requests') }}"><i class="bi bi-card-checklist"></i> Solicitudes</a>
         </li>
         {% if current_user.has_permission('manage_users') %}
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+          <a class="nav-link dropdown-toggle{{ ' active' if bp == 'admin' }}" href="#" role="button" data-bs-toggle="dropdown">
             <i class="bi bi-gear"></i> Administración
           </a>
           <ul class="dropdown-menu">

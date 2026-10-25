@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 
-from app.models import Document, ServiceRequest, User
+from app.models import RequestType, ServiceRequest
 
 main_bp = Blueprint("main", __name__)
 
@@ -21,14 +21,13 @@ def dashboard():
         .all()
     )
 
-    total_documentos = Document.query.count()
-    total_usuarios = User.query.count()
-
-    pendientes = ServiceRequest.query.filter_by(status="Pendiente").count()
-    en_proceso = ServiceRequest.query.filter_by(status="En proceso").count()
+    # Quien gestiona solicitudes ve las cifras de la empresa; el resto, solo las suyas.
+    gestor = current_user.has_permission("manage_requests")
+    base = ServiceRequest.query if gestor else ServiceRequest.query.filter_by(requester_id=current_user.id)
+    conteos = {e: base.filter_by(status=e).count() for e in ("Pendiente", "En proceso", "Aprobada")}
 
     asignadas_a_mi = []
-    if current_user.has_permission("manage_requests"):
+    if gestor:
         asignadas_a_mi = (
             ServiceRequest.query.filter_by(assigned_to_id=current_user.id)
             .filter(ServiceRequest.status.in_(["Pendiente", "En proceso"]))
@@ -39,9 +38,8 @@ def dashboard():
     return render_template(
         "dashboard.html",
         mis_solicitudes=mis_solicitudes,
-        total_documentos=total_documentos,
-        total_usuarios=total_usuarios,
-        pendientes=pendientes,
-        en_proceso=en_proceso,
+        gestor=gestor,
+        conteos=conteos,
+        tipos=RequestType.query.order_by(RequestType.name).all(),
         asignadas_a_mi=asignadas_a_mi,
     )

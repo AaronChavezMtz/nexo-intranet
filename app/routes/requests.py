@@ -21,18 +21,13 @@ def _generar_folio() -> str:
 @requests_bp.route("/")
 @login_required
 def list_requests():
-    if current_user.has_permission("manage_requests"):
-        estado = request.args.get("estado")
-        query = ServiceRequest.query
-        if estado:
-            query = query.filter_by(status=estado)
-        solicitudes = query.order_by(ServiceRequest.created_at.desc()).all()
-    else:
-        solicitudes = (
-            ServiceRequest.query.filter_by(requester_id=current_user.id)
-            .order_by(ServiceRequest.created_at.desc())
-            .all()
-        )
+    query = ServiceRequest.query
+    if not current_user.has_permission("manage_requests"):
+        query = query.filter_by(requester_id=current_user.id)
+    estado = request.args.get("estado")
+    if estado:
+        query = query.filter_by(status=estado)
+    solicitudes = query.order_by(ServiceRequest.created_at.desc()).all()
 
     return render_template("requests_list.html", solicitudes=solicitudes)
 
@@ -41,9 +36,12 @@ def list_requests():
 @login_required
 def new_request():
     form = ServiceRequestForm()
-    form.request_type_id.choices = [
+    # La opción 0 obliga a elegir: antes quedaba marcado el primer tipo por orden alfabético.
+    form.request_type_id.choices = [(0, "— Elige el tipo de solicitud —")] + [
         (t.id, t.name) for t in RequestType.query.order_by(RequestType.name).all()
     ]
+    if request.method == "GET":
+        form.request_type_id.data = request.args.get("tipo", 0, type=int)
 
     if form.validate_on_submit():
         solicitud = None

@@ -37,13 +37,13 @@
         {% if protegido and u.id != current_user.id %}
         <span class="text-muted" title="Usuario protegido"><i class="bi bi-lock-fill"></i></span>
         {% else %}
-        <a href="{{ url_for('admin.edit_user', user_id=u.public_id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+        <a href="{{ url_for('admin.edit_user', user_id=u.public_id) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ u.full_name }}" title="Editar"><i class="bi bi-pencil" aria-hidden="true"></i></a>
         {% endif %}
         {% if u.id != current_user.id and not protegido %}
         <form action="{{ url_for('admin.delete_user', user_id=u.public_id) }}" method="POST" class="d-inline"
       onsubmit="return confirmAction(this, '¿Eliminar a {{ u.full_name }}? Esto también borrará TODOS sus documentos y solicitudes de forma permanente.');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          <button class="btn btn-sm btn-outline-danger" aria-label="Eliminar {{ u.full_name }}" title="Eliminar"><i class="bi bi-trash" aria-hidden="true"></i></button>
         </form>
         {% endif %}
       </td>

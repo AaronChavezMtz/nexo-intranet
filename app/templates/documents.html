@@ -10,12 +10,13 @@
   {% endif %}
 </div>
 
-<div class="mb-3">
-  <a href="{{ url_for('documents.list_documents') }}" class="btn btn-sm btn-outline-secondary">Todas</a>
+{% set actual = request.args.get('categoria') %}
+<nav class="mb-3 d-flex flex-wrap gap-1" aria-label="Filtrar por categoría">
+  <a href="{{ url_for('documents.list_documents') }}" class="btn btn-sm {{ 'btn-primary' if not actual else 'btn-outline-secondary' }}"{% if not actual %} aria-current="page"{% endif %}>Todas</a>
   {% for c in categorias %}
-  <a href="{{ url_for('documents.list_documents', categoria=c) }}" class="btn btn-sm btn-outline-secondary">{{ c }}</a>
+  <a href="{{ url_for('documents.list_documents', categoria=c) }}" class="btn btn-sm {{ 'btn-primary' if actual == c else 'btn-outline-secondary' }}"{% if actual == c %} aria-current="page"{% endif %}>{{ c }}</a>
   {% endfor %}
-</div>
+</nav>
 
 <div class="table-responsive">
 <table class="table table-hover align-middle bg-white">
@@ -41,14 +42,14 @@
       <td>{{ doc.uploaded_by.full_name }}</td>
       <td>{{ doc.uploaded_at.strftime('%d/%m/%Y') }}</td>
       <td class="text-end">
-        <a href="{{ url_for('documents.download_document', doc_id=doc.public_id) }}" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-download"></i>
+        <a href="{{ url_for('documents.download_document', doc_id=doc.public_id) }}" class="btn btn-sm btn-outline-primary" aria-label="Descargar {{ doc.title }}" title="Descargar">
+          <i class="bi bi-download" aria-hidden="true"></i>
         </a>
         {% if current_user.has_permission('manage_documents') %}
   <form action="{{ url_for('documents.delete_document', doc_id=doc.public_id) }}" method="POST" class="d-inline"
       onsubmit="return confirmAction(this, '¿Eliminar este documento? Esta acción no se puede deshacer.');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          <button class="btn btn-sm btn-outline-danger" aria-label="Eliminar {{ doc.title }}" title="Eliminar"><i class="bi bi-trash" aria-hidden="true"></i></button>
         </form>
         {% endif %}
       </td>

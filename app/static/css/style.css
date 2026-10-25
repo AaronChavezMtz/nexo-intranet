@@ -3,13 +3,14 @@
   --nx-primary: #163a5f;
   --nx-primary-dark: #0e2740;
   --nx-primary-light: #e8eef4;
-  --nx-accent: #2f7cd6;
+  --nx-accent: #1f66b8;   /* 5.3:1 sobre el fondo gris (AA) */
   --nx-surface: #ffffff;
   --nx-bg: #f4f6f9;
   --nx-border: #e3e7ed;
   --nx-text: #1f2a37;
-  --nx-muted: #64748b;
+  --nx-muted: #5c6670;    /* 5.4:1 sobre el fondo gris (AA) */
   --nx-radius: 0.6rem;
+  --bs-secondary-color: var(--nx-muted);  /* .text-muted de Bootstrap */
 }
 
 body {
@@ -33,12 +34,64 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.5px;
   font-weight: 700;
 }
+.navbar-dark {
+  --bs-navbar-color: rgba(255, 255, 255, 0.85);  /* el 0.55 de Bootstrap no llega a AA */
+  --bs-navbar-hover-color: #fff;
+  --bs-navbar-active-color: #fff;
+}
 .navbar .nav-link {
   font-weight: 500;
-  opacity: 0.92;
 }
-.navbar .nav-link:hover {
-  opacity: 1;
+.navbar .nav-link.active {
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 #fff;
+}
+
+/* ---------- Dashboard: títulos de sección y accesos directos ---------- */
+.section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--nx-muted);
+  margin-bottom: 0.6rem;
+}
+.quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 96px;
+  height: 100%;
+  padding: 1rem;
+  text-align: center;
+  background-color: var(--nx-surface);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  color: var(--nx-primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.quick-action i {
+  font-size: 1.5rem;
+}
+.quick-action:hover,
+.kpi-link:hover {
+  border-color: var(--nx-accent);
+  background-color: var(--nx-primary-light);
+  color: var(--nx-primary-dark);
+}
+.kpi-link {
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.quick-action:focus-visible,
+.kpi-link:focus-visible {
+  outline: 3px solid var(--nx-accent);
+  outline-offset: 2px;
 }
 
 /* ---------- Botones ---------- */

@@ -111,7 +111,8 @@ class DocumentForm(FlaskForm):
 
 
 class ServiceRequestForm(FlaskForm):
-    request_type_id = SelectField("Tipo de solicitud", coerce=int, validators=[DataRequired()])
+    request_type_id = SelectField("Tipo de solicitud", coerce=int,
+                                  validators=[DataRequired(message="Elige el tipo de solicitud.")])
     description = TextAreaField(
         "Descripción / detalle de tu solicitud",
         validators=[DataRequired(message="Describe tu solicitud."), Length(min=10, max=2000)],
