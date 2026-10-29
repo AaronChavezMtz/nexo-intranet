@@ -89,6 +89,9 @@ def new_user():
 @login_required
 @permission_required("manage_users")
 def edit_user(user_id):
+    if current_user.username in USUARIOS_DEMO:
+        flash("La cuenta demo puede ver y crear usuarios, pero no editarlos ni eliminarlos.", "info")
+        return redirect(url_for("admin.list_users"))
     usuario = User.query.filter_by(public_id=user_id).first_or_404()
 
     # Un usuario protegido solo puede ser editado por él mismo (se bloquea
@@ -160,6 +163,9 @@ def edit_user(user_id):
 @login_required
 @permission_required("manage_users")
 def delete_user(user_id):
+    if current_user.username in USUARIOS_DEMO:
+        flash("La cuenta demo puede ver y crear usuarios, pero no editarlos ni eliminarlos.", "info")
+        return redirect(url_for("admin.list_users"))
     usuario = User.query.filter_by(public_id=user_id).first_or_404()
 
     if usuario.id == current_user.id:

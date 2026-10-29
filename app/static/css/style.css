@@ -376,12 +376,31 @@ a.oficio:hover { border-color: var(--tinta); color: var(--texto); }
 }
 .acceso .hoja { padding: 2rem; }
 .acceso-aviso { display: flex; gap: 0.5rem; margin: 1.25rem 0 0; color: var(--gris); font-size: 0.875rem; }
-.cuentas-demo { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--linea-suave); font-size: 0.875rem; }
-.cuentas-demo p { color: var(--gris); margin-bottom: 0.6rem; }
-.cuentas-demo table { width: 100%; }
-.cuentas-demo th { color: var(--gris); font-weight: 500; padding: 0.3rem 0.5rem 0.3rem 0; white-space: nowrap; }
-.cuentas-demo td { padding: 0.3rem 0.5rem 0.3rem 0; }
-.cuentas-demo code { color: var(--tinta); background-color: var(--papel); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.8rem; word-break: break-all; }
+.demo-botones { display: grid; gap: 0.5rem; }
+.demo-boton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  background-color: var(--hoja);
+  border: 1px solid var(--tinta);
+  border-radius: var(--radio-control);
+  text-align: left;
+}
+.demo-boton:hover { background-color: var(--tinta); }
+.demo-boton:hover .demo-boton-rol, .demo-boton:hover .demo-boton-detalle { color: #fff; }
+.demo-boton-rol { color: var(--tinta); font-weight: 600; }
+.demo-boton-detalle { color: var(--gris); font-size: 0.85rem; }
+.acceso-separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 1rem;
+  color: var(--gris);
+  font-size: 0.85rem;
+}
+.acceso-separador::before, .acceso-separador::after { content: ""; flex: 1; border-top: 1px solid var(--linea); }
 
 /* ---------- Panel de operación ---------- */
 .accesos {

@@ -11,7 +11,7 @@ Plataforma web para digitalizar procesos internos de una empresa: gestión docum
 
 **🔗 Demo en vivo:** [Nexo-Intranet](https://nexo-intranet.onrender.com)
 
-> **Acceso de prueba para revisión:**
+> **Acceso de prueba para revisión:** en la pantalla de inicio de sesión hay un botón por rol que entra con un clic. También puedes usar estas cuentas:
 >
 > | Rol | Usuario | Contraseña |
 > |---|---|---|
@@ -373,6 +373,7 @@ Detalles de la configuración:
 - Protección CSRF global (`CSRFProtect`): todo envío POST, incluidas las acciones de eliminar y reiniciar la demo, exige token; complementada con cookies `SameSite=Lax`.
 - Redirección tras el login limitada a rutas internas (sin redirecciones abiertas).
 - Contraseñas temporales: las definidas por un administrador deben cambiarse en el siguiente acceso; las cuentas demo públicas no pueden cambiar su contraseña, para que nadie bloquee la demo.
+- Acceso demo de un clic limitado a las tres cuentas demo (nunca a `superadmin` ni a cuentas reales), con token CSRF. La cuenta demo de administrador puede ver y crear usuarios, pero no editarlos ni eliminarlos.
 - Control de acceso mediante decoradores de permisos (`@permission_required`) y comprobaciones de propiedad o departamento en las vistas que muestran datos individuales (solicitudes y descargas de documentos).
 - Cookies de sesión `HttpOnly`, `SameSite=Lax`, y `Secure` en producción.
 - Identificadores públicos (UUID) en URLs en lugar de IDs autoincrementales.

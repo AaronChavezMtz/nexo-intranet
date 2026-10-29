@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app import db
-from app.demo import USUARIOS_DEMO
+from app.demo import CUENTAS_DEMO, USUARIOS_DEMO
 from app.models import User
 from app.forms import LoginForm, ChangePasswordForm
 
@@ -61,7 +61,18 @@ def login():
     elif request.method == "POST":
         flash("Escribe tu usuario y contraseña.", "danger")
 
-    return render_template("login.html", form=form)
+    return render_template("login.html", form=form, cuentas_demo=CUENTAS_DEMO)
+
+
+@auth_bp.route("/login/demo", methods=["POST"])
+def login_demo():
+    # Acceso de un clic para quien revisa la demo: sin contraseña, pero solo a las cuentas demo.
+    usuario = User.query.filter_by(username=request.form.get("cuenta", "")).first()
+    if usuario is None or usuario.username not in USUARIOS_DEMO or not usuario.is_active_user:
+        flash("Esa cuenta demo no está disponible.", "danger")
+        return redirect(url_for("auth.login"))
+    login_user(usuario)
+    return redirect(url_for("main.dashboard"))
 
 
 @auth_bp.route("/logout")
