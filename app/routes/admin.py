@@ -47,7 +47,12 @@ def list_users():
 @permission_required("manage_users")
 def new_user():
     form = UserForm()
-    form.role_id.choices = [(r.id, r.name) for r in Role.query.order_by(Role.name).all()]
+    roles = Role.query.order_by(Role.name).all()
+    # La cuenta demo no puede crear administradores (tendrían permisos completos).
+    # Al quitarlo de las opciones, WTForms también rechaza el valor si se envía a mano.
+    if current_user.username in USUARIOS_DEMO:
+        roles = [r for r in roles if r.name != "Administrador"]
+    form.role_id.choices = [(r.id, r.name) for r in roles]
     form.department_id.choices = [(0, "-- Ninguno --")] + [
         (d.id, d.name) for d in Department.query.order_by(Department.name).all()
     ]
